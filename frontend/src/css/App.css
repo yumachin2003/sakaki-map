@@ -1,0 +1,109 @@
+/* グローバルスタイル */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+h1, h2 {
+  color: #444;
+}
+
+/* Appコンポーネントの基本レイアウト */
+.App {
+  text-align: center;
+}
+
+/* 汎用コンポーネントスタイル */
+.container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+form {
+  margin-top: 10px;
+}
+
+.star-row {
+  font-size: 1.8rem;
+  margin: 10px 0;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+
+
+/* テーブルスタイル */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+th, td {
+  border-bottom: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+th {
+  background-color: #f8f8f8;
+}
+
+.festival-btn {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 6px 12px;
+  margin: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.festival-btn:hover {
+  background-color: #0056b3;
+}
+
+.festival-card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--mantine-shadow-lg);
+}
+
+/* カレンダーの年月表示・ヘッダーの視認性強制修正 */
+.rbc-toolbar-label, 
+.mantine-Calendar-calendarHeaderLevel, 
+.mantine-CalendarHeader-calendarHeaderLevel,
+.mantine-Calendar-calendarHeaderControl,
+.mantine-CalendarHeader-calendarHeaderControl {
+  color: inherit !important; /* 親テーマの色を継承 */
+  font-weight: 700;
+}
+
+/* ライトモード時は強制的に濃い色にする（白飛び防止） */
+:root[data-mantine-color-scheme="light"] .rbc-toolbar-label,
+:root[data-mantine-color-scheme="light"] button.rbc-btn-group > button,
+:root[data-mantine-color-scheme="light"] .mantine-Calendar-calendarHeaderLevel {
+  color: #333 !important;
+}
+
+/* カレンダーの「今日」「戻る」「次へ」ボタン等の調整 */
+.rbc-btn-group button {
+  color: inherit;
+}
+
+/* 入力フォームのプレースホルダー視認性向上 */
+input::placeholder {
+  opacity: 0.7;
+}

@@ -1,0 +1,230 @@
+/* すりガラス効果 (Glassmorphism) の共通スタイル */
+
+:root {
+  /* --- 共通設定 (透明度) --- */
+  --glass-opacity: 0.5;
+
+  /* --- ライトモード用変数 --- */
+  --glass-bg-light: rgba(255, 255, 255, var(--glass-opacity));
+  --glass-bg-header-light: rgba(255, 255, 255, var(--glass-opacity));
+  --glass-bg-modal-light: rgba(255, 255, 255, var(--glass-opacity));
+  --glass-bg-input-light: rgba(255, 255, 255, var(--glass-opacity));
+  --glass-border-light: rgba(0, 0, 0, 0.1);
+  --glass-text-light: #333;
+  --glass-text-dimmed-light: rgba(0, 0, 0, 0.5);
+
+  /* --- ダークモード用変数 --- */
+  --glass-bg-dark: rgba(30, 30, 30, var(--glass-opacity));
+  --glass-bg-header-dark: rgba(30, 30, 30, var(--glass-opacity));
+  --glass-bg-modal-dark: rgba(30, 30, 30, var(--glass-opacity));
+  --glass-bg-input-dark: rgba(0, 0, 0, var(--glass-opacity));
+  --glass-border-dark: rgba(255, 255, 255, 0.1);
+  --glass-text-dark: white;
+  --glass-text-dimmed-dark: rgba(255, 255, 255, 0.5);
+
+  /* --- 共通設定 (ぼかし、角丸、影) --- */
+  --glass-blur: 10px;
+
+  --glass-radius-sm: 8px;
+  --glass-radius-md: 12px;
+  --glass-radius-lg: 16px;
+  --glass-radius-xl: 24px;
+  --glass-radius-xxl: 40px;
+
+  --glass-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --glass-shadow-md: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --glass-shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+/* テーマに応じた変数の割り当て */
+[data-mantine-color-scheme="light"] {
+  --glass-bg: var(--glass-bg-light);
+  --glass-bg-header: var(--glass-bg-header-light);
+  --glass-bg-modal: var(--glass-bg-modal-light);
+  --glass-bg-input: var(--glass-bg-input-light);
+  --glass-border: var(--glass-border-light);
+  --glass-text: var(--glass-text-light);
+  --glass-input-border: rgba(0, 0, 0, 0.2);
+  --glass-input-placeholder: rgba(0, 0, 0, 0.5);
+  --glass-text-dimmed: var(--glass-text-dimmed-light);
+  --mantine-color-dimmed: var(--glass-text-dimmed-light);
+  --mantine-color-text: var(--glass-text-light);
+}
+
+[data-mantine-color-scheme="dark"],
+.force-dark-mode {
+  --glass-bg: var(--glass-bg-dark);
+  --glass-bg-header: var(--glass-bg-header-dark);
+  --glass-bg-modal: var(--glass-bg-modal-dark);
+  --glass-bg-input: var(--glass-bg-input-dark);
+  --glass-border: var(--glass-border-dark);
+  --glass-text: var(--glass-text-dark);
+  --glass-input-border: rgba(255, 255, 255, 0.2);
+  --glass-input-placeholder: rgba(255, 255, 255, 0.5);
+  --glass-text-dimmed: var(--glass-text-dimmed-dark);
+  --mantine-color-dimmed: var(--glass-text-dimmed-dark);
+  --mantine-color-text: var(--glass-text-dark);
+}
+
+/* --- 共通ベース --- */
+.glass-base,
+.glass-panel,
+.glass-header,
+.glass-modal,
+.glass-drawer,
+.glass-tooltip,
+.glass-input,
+.glass-sidebar,
+.glass-map-control {
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* --- ヘッダー (App.js) --- */
+.glass-header {
+  background-color: var(--glass-bg-header) !important;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* --- パネル・カード (Calendar.js, Map.js) --- */
+.glass-panel {
+  background-color: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--glass-text);
+}
+
+/* --- モーダル (App.js, Calendar.js) --- */
+.glass-modal {
+  background-color: var(--glass-bg-modal) !important;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius-lg);
+  box-shadow: var(--glass-shadow-md);
+  color: var(--glass-text) !important;
+}
+.glass-modal-header {
+  background-color: transparent !important;
+  color: var(--glass-text) !important;
+}
+
+/* --- ドロワー (App.js) --- */
+.glass-drawer {
+  background-color: var(--glass-bg-modal) !important;
+  border-radius: var(--glass-radius-lg);
+  margin: 12px;
+  height: calc(100% - 24px) !important;
+  box-shadow: var(--glass-shadow-md);
+  border: 1px solid var(--glass-border);
+  color: var(--glass-text) !important;
+}
+.glass-drawer-header {
+  background-color: transparent !important;
+  color: var(--glass-text) !important;
+}
+
+/* --- ツールチップ (App.js) --- */
+.glass-tooltip {
+  background-color: rgba(20, 20, 20, 0.5) !important;
+  backdrop-filter: blur(var(--glass-blur));
+  color: var(--glass-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* --- 入力フォーム (App.js) --- */
+.glass-input {
+  background-color: var(--glass-bg-input) !important;
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-input-border) !important;
+  color: var(--glass-text) !important;
+}
+.glass-input::placeholder {
+  color: var(--glass-input-placeholder);
+}
+
+/* --- カレンダーラッパー (Calendar.js) --- */
+.glass-calendar-wrapper {
+  background-color: var(--glass-bg-input);
+  border-radius: var(--glass-radius-md);
+  padding: 16px;
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+/* --- マップコントロール (Map.js) --- */
+/* Map.jsは強制ダークモードのため、固定色を使用 */
+.glass-map-control {
+  background-color: rgba(20, 21, 23, 0.85);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: var(--glass-shadow-lg);
+  color: #fff;
+  overflow: hidden;
+}
+
+/* --- マップサイドバー (Map.js) --- */
+/* Map.jsは強制ダークモードのため、固定色を使用 */
+.glass-sidebar {
+  background-color: rgba(20, 21, 23, 0.85);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+/* --- Leaflet Popup (Map.js) --- */
+.leaflet-popup-content-wrapper {
+  background: rgba(20, 21, 23, 0.85) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: var(--glass-radius-md) !important;
+  color: #fff !important;
+}
+.leaflet-popup-tip {
+  background: rgba(20, 21, 23, 0.85) !important;
+}
+
+/* --- 通知 (Notifications) --- */
+.glass-notification {
+  background-color: var(--glass-bg-header) !important;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-md);
+  border-radius: var(--glass-radius-md) !important;
+}
+.glass-notification .mantine-Notification-title {
+  color: var(--glass-text) !important;
+  font-weight: 700;
+}
+.glass-notification .mantine-Notification-description,
+.glass-notification .mantine-Notification-closeButton,
+.glass-notification .mantine-Notification-icon {
+  color: var(--glass-text) !important;
+}
+.glass-notification .mantine-Notification-closeButton:hover {
+  background-color: rgba(128, 128, 128, 0.15) !important;
+}
+
+/* --- ドロップダウン (AccountHoverCard.js) --- */
+.glass-dropdown {
+  background-color: var(--glass-bg-modal) !important;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-md);
+  border-radius: var(--glass-radius-md);
+  color: var(--glass-text) !important;
+}
+
+/* --- アニメーション --- */
+@keyframes glass-fade-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.glass-fade-in {
+  animation: glass-fade-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
