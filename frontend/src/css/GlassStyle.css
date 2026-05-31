@@ -2,7 +2,7 @@
 
 :root {
   /* --- 共通設定 (透明度) --- */
-  --glass-opacity: 0.5;
+  --glass-opacity: 0.75;
 
   /* --- ライトモード用変数 --- */
   --glass-bg-light: rgba(255, 255, 255, var(--glass-opacity));
@@ -154,7 +154,7 @@
 /* --- マップコントロール (Map.js) --- */
 /* Map.jsは強制ダークモードのため、固定色を使用 */
 .glass-map-control {
-  background-color: rgba(20, 21, 23, 0.85);
+  background-color: rgba(20, 21, 23, var(--glass-opacity));
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -166,7 +166,7 @@
 /* --- マップサイドバー (Map.js) --- */
 /* Map.jsは強制ダークモードのため、固定色を使用 */
 .glass-sidebar {
-  background-color: rgba(20, 21, 23, 0.85);
+  background-color: rgba(20, 21, 23, var(--glass-opacity));
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -184,6 +184,16 @@
 }
 .leaflet-popup-tip {
   background: rgba(20, 21, 23, 0.85) !important;
+}
+
+/* --- Leaflet Layers Control (Map.js) --- */
+.leaflet-control-layers {
+  background-color: rgba(20, 21, 23, 0.85) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: var(--glass-radius-md) !important;
+  color: #fff !important;
 }
 
 /* --- 通知 (Notifications) --- */

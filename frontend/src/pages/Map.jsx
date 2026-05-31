@@ -1,25 +1,49 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { renderToString } from 'react-dom/server';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Text, Button, Group, Paper, Title, List, ScrollArea, TextInput, Stack, Divider, Box, CloseButton, ActionIcon } from '@mantine/core';
+import { Text, Group, Box, CloseButton } from '@mantine/core';
 import { useMediaQuery, useElementSize } from '@mantine/hooks';
-import { IconCurrentLocation, IconMapPin, IconSearch, IconCar, IconTrain, IconPlus, IconMinus, IconUpload } from '@tabler/icons-react';
+import { IconMapPinFilled } from '@tabler/icons-react';
 import L from 'leaflet';
-import { MapData } from '../seed/MapData';
 import 'leaflet/dist/leaflet.css';
 import '../css/GlassStyle.css';
-import { textColor, pinColor, textSize, fontFamily } from '../lv1';
-import { useSatellite, useCurrentButton, useDetailCard, useUploadPage } from '../lv2';
+// 生徒用の編集ファイルの読み込み
+import { pinColor, textColor, textSize, fontFamily } from '../lv1';
+import { useSatellite } from '../lv2';
+import MapControl from '../components/MapControl';
+import SideBar from '../components/SideBar';
+const seedModules = import.meta.glob('../seed/MapData.*', { eager: true });
+const moduleKey = Object.keys(seedModules)[0];
+const MapData = moduleKey ? seedModules[moduleKey].MapData || [] : [];
 
-// 初期位置（坂城町付近に変更）
-const INITIAL_CENTER = [36.4632, 138.1834];
+// 初期位置（全地点の中央を計算）
+const calculateCenter = (data) => {
+  if (!data || !Array.isArray(data)) return [36.4632, 138.1450];
+  const validData = data.filter(d => d.latitude && d.longitude);
+  if (validData.length === 0) return [36.4632, 138.1450]; // データがない場合のデフォルト
+  const lats = validData.map(d => d.latitude);
+  const lngs = validData.map(d => d.longitude);
+  const midLat = (Math.max(...lats) + Math.min(...lats)) / 2;
+  const midLng = (Math.max(...lngs) + Math.min(...lngs)) / 2;
+  return [midLat, midLng];
+};
+const INITIAL_CENTER = calculateCenter(MapData);
 
 // 【Lv.1】設定したpinColorを反映するカスタムピン
 const customPinIcon = L.divIcon({
   className: 'custom-pin',
-  html: `<div style="background-color: ${pinColor}; width: 28px; height: 28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.5);"></div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 28],
-  popupAnchor: [0, -28],
+  html: renderToString(
+    <div style={{ 
+      position: 'relative', width: '32px', height: '32px',
+      filter: 'drop-shadow(1.5px 1.5px 0 white) drop-shadow(-1.5px -1.5px 0 white) drop-shadow(-1.5px 1.5px 0 white) drop-shadow(1.5px -1.5px 0 white) drop-shadow(0px 3px 5px rgba(0,0,0,0.5))'
+    }}>
+      <IconMapPinFilled size={32} color={pinColor} style={{ position: 'absolute', top: 0, left: 0 }} />
+      <IconMapPinFilled size={32} color="url(#black-gradient)" style={{ position: 'absolute', top: 0, left: 0 }} />
+    </div>
+  ),
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
 });
 
 const userIcon = L.divIcon({
@@ -30,13 +54,14 @@ const userIcon = L.divIcon({
   popupAnchor: [0, -10]
 });
 
-// --- サブコンポーネント ---
+// === マップ移動コンポーネント ===
 function MapRecenter({ center }) {
   const map = useMap();
   useEffect(() => { if (center) map.flyTo(center, 14, { duration: 2.5 }); }, [center, map]);
   return null;
 }
 
+// === 要素の中央に移動するコンポーネント ===
 function MapBoundsHandler({ points, sidebarWidth, sidebarHeight, isMobile }) {
   const map = useMap();
   useEffect(() => {
@@ -64,49 +89,22 @@ function ResizeMap({ sidebarHeight, isResizing }) {
   return null;
 }
 
-function MapControls({ handleCurrentLocation, hasUserLocation }) {
-  const map = useMap();
-  return (
-    <Stack gap="xs">
-      <Paper className="glass-map-control" style={{ display: 'flex', flexDirection: 'column' }}>
-        <ActionIcon onClick={() => map.zoomIn()} size="lg" variant="subtle" style={{ borderRadius: 0, borderBottom: '1px solid rgba(128,128,128,0.2)' }} color="gray"><IconPlus size={18} /></ActionIcon>
-        <ActionIcon onClick={() => map.zoomOut()} size="lg" variant="subtle" style={{ borderRadius: 0 }} color="gray"><IconMinus size={18} /></ActionIcon>
-      </Paper>
-      
-      {/* 【Lv.2】現在地ボタンの表示切り替え */}
-      {useCurrentButton && (
-        <Paper className="glass-map-control">
-          <ActionIcon onClick={handleCurrentLocation} size="lg" variant={hasUserLocation ? "filled" : "subtle"} color={hasUserLocation ? "blue" : "gray"}>
-            <IconCurrentLocation size={18} />
-          </ActionIcon>
-        </Paper>
-      )}
-    </Stack>
-  );
-}
-
-// --- ユーティリティ関数 ---
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-};
-
-// --- メインコンポーネント ---
+// === メインコンポーネント ===
 function Map() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   
-  const memories = MapData; // さかきマップ用に変数を読み替え
+  const memories = Array.isArray(MapData) ? MapData : []; // さかきマップ用に変数を読み替え
   const validMemories = useMemo(() => memories.filter(f => f.latitude && f.longitude), [memories]);
 
   const [mapCenter, setMapCenter] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
+  const [isLocationActive, setIsLocationActive] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [fitPoints, setFitPoints] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMemoryId, setSelectedMemoryId] = useState(null);
   const [isResizing, setIsResizing] = useState(false);
+  const [mapLayer, setMapLayer] = useState('normal'); // normal, satellite
   const [sidebarWidth] = useState(350);
 
   const { ref: sidebarRef } = useElementSize();
@@ -130,6 +128,11 @@ function Map() {
   const selectedMemory = useMemo(() => 
     validMemories.find(f => f.id === selectedMemoryId), 
   [validMemories, selectedMemoryId]);
+
+  const layerUrl = useMemo(() => {
+    if (mapLayer === 'satellite') return "https://mt1.google.com/vt/lyrs=y&hl=ja&x={x}&y={y}&z={z}";
+    return "https://mt1.google.com/vt/lyrs=m&hl=ja&x={x}&y={y}&z={z}";
+  }, [mapLayer]);
 
   const snapPoints = useMemo(() => {
     const handleH = 32; 
@@ -175,14 +178,33 @@ function Map() {
     setMapCenter(null);
     setFitPoints(validMemories.map(f => [f.latitude, f.longitude]));
     validMemories.forEach(f => markerRefs.current[f.id]?.closePopup());
+    setIsLocationActive(false);
   };
 
   const handleCurrentLocation = () => {
-    navigator.geolocation.getCurrentPosition(p => {
-      const loc = [p.coords.latitude, p.coords.longitude];
-      setUserLocation(loc);
-      setFitPoints([...validMemories.map(f => [f.latitude, f.longitude]), loc]);
-    });
+    if (isLocationActive) {
+      // すでに現在地にズームしている場合は、解除して全体表示に戻す
+      setIsLocationActive(false);
+      setFitPoints(validMemories.map(f => [f.latitude, f.longitude]));
+    } else {
+      // それ以外（初めて押す or 解除後に再度押す）の場合は、必ず最新の現在地を再取得する
+      setIsLocating(true);
+      navigator.geolocation.getCurrentPosition(
+        p => {
+          const loc = [p.coords.latitude, p.coords.longitude];
+          setUserLocation(loc);
+          setIsLocationActive(true);
+          setFitPoints([...validMemories.map(f => [f.latitude, f.longitude]), loc]);
+          setIsLocating(false);
+        },
+        error => {
+          console.error(error);
+          alert('現在地の取得に失敗しました。端末やブラウザの位置情報許可設定を確認してください。');
+          setIsLocating(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
   };
 
   const startResizing = (e) => { e.preventDefault(); setIsResizing(true); };
@@ -219,11 +241,21 @@ function Map() {
     <Box 
       className="festival-map-container" 
       style={{ 
-        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
         backgroundColor: '#1A1B1E', touchAction: 'none'
       }}
     >
+      {/* アイコン用のグラデーション定義 */}
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <linearGradient id="black-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.2)" />
+          </linearGradient>
+        </defs>
+      </svg>
+
       <style>
         {`
           body { overflow: hidden; position: fixed; width: 100%; }
@@ -241,17 +273,13 @@ function Map() {
       <Box style={{ flex: 1, position: 'relative', width: '100%', height: '100%' }}>
         <MapContainer center={INITIAL_CENTER} zoom={13} zoomControl={false} attributionControl={false} style={{ height: '100%', width: '100%' }}>
           
-          {/* 【Lv.2】航空写真の切り替え */}
           <TileLayer 
             attribution='© Google' 
-            url={useSatellite 
-              ? "https://mt1.google.com/vt/lyrs=s&hl=ja&x={x}&y={y}&z={z}" 
-              : "https://mt1.google.com/vt/lyrs=y&hl=ja&x={x}&y={y}&z={z}"
-            } 
+            url={useSatellite ? layerUrl : "https://mt1.google.com/vt/lyrs=m&hl=ja&x={x}&y={y}&z={z}"} 
           />
           
           <div className={!isResizing ? 'controls-transition' : ''} style={{ position: 'absolute', bottom: isMobile ? (sidebarHeight + 20) : 20, right: 20, zIndex: 1000 }}>
-            <MapControls hasUserLocation={!!userLocation} handleCurrentLocation={handleCurrentLocation} />
+            <MapControl isLocationActive={isLocationActive} isLocating={isLocating} handleCurrentLocation={handleCurrentLocation} mapLayer={mapLayer} setMapLayer={setMapLayer} />
           </div>
 
           <MapRecenter center={mapCenter} />
@@ -261,7 +289,7 @@ function Map() {
           {filteredMemories.map(f => (
             <Marker 
               key={f.id} position={[f.latitude, f.longitude]} 
-              icon={customPinIcon} // 【Lv.1】色連動アイコン
+              icon={customPinIcon}
               ref={el => (markerRefs.current[f.id] = el)}
               eventHandlers={{ 
                 mouseover: (e) => e.target.openPopup(),
@@ -290,97 +318,27 @@ function Map() {
         </MapContainer>
       </Box>
 
-      {/* サイドバー本体（スマホ対応の動きを維持） */}
-      <Box ref={sidebarRef} className={`glass-sidebar ${!isResizing ? 'sidebar-transition' : ''}`} style={{
-        position: 'absolute', bottom: '0', 
-        left: isMobile ? '10px' : '20px', right: isMobile ? '10px' : 'auto',
-        width: isMobile ? 'auto' : `${sidebarWidth}px`, height: `${sidebarHeight}px`,
-        borderRadius: '12px 12px 0 0', touchAction: 'none',
-        display: 'flex', flexDirection: 'column', zIndex: 1000, overflow: 'hidden'
-      }}>
-        <Box onMouseDown={startResizing} onTouchStart={startResizing} style={{ height: '32px', paddingTop: '12px', cursor: 'row-resize', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', touchAction: 'none' }}>
-          <Box style={{ width: '40px', height: '5px', borderRadius: '10px', backgroundColor: 'rgba(128,128,128,0.4)' }} />
-        </Box>
-
-        <Box px="md" pb="md" style={{ borderBottom: sidebarHeight > snapPoints[0] + 10 ? '1px solid #373a40' : 'none', touchAction: 'none' }}>
-          <div ref={titleOnlyRef}>
-            <Title order={3} style={{ ...customTextStyle, color: 'white' }} mb={sidebarHeight > snapPoints[0] + 10 ? "xs" : 0}>
-              思い出の場所一覧
-            </Title>
-          </div>
-          
-          <div className="fade-transition" style={{ opacity: sidebarHeight > snapPoints[0] + 10 ? 1 : 0, pointerEvents: sidebarHeight > snapPoints[0] + 10 ? 'all' : 'none', height: sidebarHeight > snapPoints[0] + 10 ? 'auto' : 0, overflow: 'hidden' }}>
-            <Stack gap="xs">
-              <TextInput placeholder="検索..." leftSection={<IconSearch size={14} />} value={searchTerm} onChange={(e) => setSearchTerm(e.currentTarget.value)} size="xs" />
-              
-              {/* 【Lv.2】隠しアップロードページの解放 */}
-              {useUploadPage && (
-                 <Button color="cyan" leftSection={<IconUpload size={18} />} fullWidth onClick={() => alert('送信モーダルを開く（Lv.4の実装）')}>
-                   データを母艦へ送信🚀
-                 </Button>
-              )}
-
-              {/* 【Lv.2】詳細カードの解放 */}
-              {useDetailCard && selectedMemory && (
-                <div ref={cardRef} className="fade-transition">
-                  <Paper shadow="sm" p="md" withBorder className="glass-map-control" style={{ position: 'relative' }}>
-                    <CloseButton onClick={handleReset} style={{ position: 'absolute', top: 8, right: 8, zIndex: 2 }} />
-                    <Stack gap="xs">
-                      <Box pr={30}>
-                        <Text style={{ ...customTextStyle, color: 'white' }} fw={700}>{selectedMemory.name}</Text>
-                        <Text size="xs" c="dimmed">{selectedMemory.location}</Text>
-                        {userLocation && <Text size="xs" c="blue.5" fw={600} mt={4}>現在地から約 {calculateDistance(userLocation[0], userLocation[1], selectedMemory.latitude, selectedMemory.longitude).toFixed(1)} km</Text>}
-                      </Box>
-                      <Divider my="sm" label="ルートを検索" labelPosition="center" />
-                      <Group grow gap="xs">
-                        <Button size="xs" color="blue" leftSection={<IconCar size={14} />} onClick={() => {
-                          const originParam = userLocation ? `&origin=${userLocation[0]},${userLocation[1]}` : '';
-                          window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${selectedMemory.latitude},${selectedMemory.longitude}&travelmode=driving`, '_blank');
-                        }}>車</Button>
-                        <Button size="xs" color="teal" leftSection={<IconTrain size={14} />} onClick={() => {
-                          const originParam = userLocation ? `&origin=${userLocation[0]},${userLocation[1]}` : '';
-                          window.open(`https://www.google.com/maps/dir/?api=1${originParam}&destination=${selectedMemory.latitude},${selectedMemory.longitude}&travelmode=transit`, '_blank');
-                        }}>電車</Button>
-                      </Group>
-                    </Stack>
-                  </Paper>
-                </div>
-              )}
-            </Stack>
-          </div>
-        </Box>
-        
-        <ScrollArea style={{ flex: 1, opacity: sidebarHeight > snapPoints[0] + 20 ? 1 : 0, touchAction: 'pan-y' }}>
-          <Stack gap="xs" pt="md" pb={80} pl={0} pr="md">
-            <List spacing={0} size="sm">
-              {filteredMemories.map(f => (
-                <List.Item
-                  key={f.id}
-                  style={{ 
-                    cursor: 'pointer', padding: '12px 16px', borderRadius: '0 8px 8px 0',
-                    backgroundColor: selectedMemoryId === f.id ? 'rgba(34, 139, 230, 0.15)' : 'transparent',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)'
-                  }}
-                  onClick={() => { 
-                    setSelectedMemoryId(f.id); 
-                    setFitPoints(userLocation ? [[f.latitude, f.longitude], userLocation] : [[f.latitude, f.longitude]]);
-                  }}
-                >
-                  <Group justify="space-between" wrap="nowrap">
-                    <Box>
-                      {/* 【Lv.1】文字スタイル連動 */}
-                      <Text style={{ ...customTextStyle, color: 'white' }} fw={500}>{f.name}</Text>
-                      <Text c="dimmed" size="xs">{f.location}</Text>
-                    </Box>
-                    {/* 【Lv.1】ピン色連動 */}
-                    <IconMapPin size={16} style={{ color: pinColor, flexShrink: 0 }} />
-                  </Group>
-                </List.Item>
-              ))}
-            </List>
-          </Stack>
-        </ScrollArea>
-      </Box>
+      <SideBar
+        sidebarRef={sidebarRef}
+        isResizing={isResizing}
+        sidebarHeight={sidebarHeight}
+        isMobile={isMobile}
+        sidebarWidth={sidebarWidth}
+        startResizing={startResizing}
+        snapPoints={snapPoints}
+        titleOnlyRef={titleOnlyRef}
+        customTextStyle={customTextStyle}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedMemory={selectedMemory}
+        cardRef={cardRef}
+        handleReset={handleReset}
+        userLocation={userLocation}
+        selectedMemoryId={selectedMemoryId}
+        filteredMemories={filteredMemories}
+        setSelectedMemoryId={setSelectedMemoryId}
+        setFitPoints={setFitPoints}
+      />
     </Box>
   );
 }
