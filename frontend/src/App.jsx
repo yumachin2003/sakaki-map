@@ -1,10 +1,10 @@
 import { MantineProvider, AppShell, Group, Title, ColorSchemeScript, Button, Box, Image, Transition, Stack } from '@mantine/core';
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { IconUpload } from '@tabler/icons-react';
 import { useUploadPage } from './lv2';
 import Map from './pages/Map';
-import UploadPage from './pages/UploadPage';
+import UploadPage from './pages/StuUpload';
 import titleImage from './assets/title.png';
 import '@mantine/core/styles.css';
 import './css/GlassStyle.css';
@@ -18,6 +18,7 @@ const theme = {
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const [isUploadModalOpen, setUploadModalOpen] = useState(false);
 
   useEffect(() => {
     // 3秒後に自動で非表示にする
@@ -61,7 +62,7 @@ export default function App() {
               <Group h="100%" px="md" justify="space-between">
                 <Title order={3} style={{ fontFamily: "'Keifont', sans-serif" }}>さかき思い出マップ</Title>
                 {useUploadPage && (
-                <Button component={Link} to="/upload" color="cyan" leftSection={<IconUpload size={18} />} variant="light" size="sm">
+                <Button onClick={() => setUploadModalOpen(true)} color="cyan" leftSection={<IconUpload size={18} />} variant="light" size="sm">
                   データ送信
                 </Button>
                 )}
@@ -73,9 +74,13 @@ export default function App() {
           <AppShell.Main p={0}>
             <Routes>
               <Route path="/" element={<Map />} />
-              <Route path="/upload" element={<UploadPage />} />
             </Routes>
           </AppShell.Main>
+          
+          <UploadPage 
+            opened={isUploadModalOpen} 
+            onClose={() => setUploadModalOpen(false)} 
+          />
           
         </AppShell>
       </BrowserRouter>
