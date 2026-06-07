@@ -3,7 +3,6 @@ import { renderToString } from 'react-dom/server';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { Text, Group, Box, CloseButton } from '@mantine/core';
 import { useMediaQuery, useElementSize } from '@mantine/hooks';
-import { IconMapPinFilled } from '@tabler/icons-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../css/GlassStyle.css';
@@ -35,22 +34,27 @@ const customPinIcon = L.divIcon({
   html: renderToString(
     <div style={{ 
       position: 'relative', width: '32px', height: '32px',
-      filter: 'drop-shadow(1.5px 1.5px 0 white) drop-shadow(-1.5px -1.5px 0 white) drop-shadow(-1.5px 1.5px 0 white) drop-shadow(1.5px -1.5px 0 white) drop-shadow(0px 3px 5px rgba(0,0,0,0.5))'
+      filter: 'drop-shadow(1px 1px 0 white) drop-shadow(-1px -1px 0 white) drop-shadow(-1px 1px 0 white) drop-shadow(1px -1px 0 white) drop-shadow(0px 3px 4px rgba(0,0,0,0.4))'
     }}>
-      <IconMapPinFilled size={32} color={pinColor} style={{ position: 'absolute', top: 0, left: 0 }} />
-      <IconMapPinFilled size={32} color="url(#black-gradient)" style={{ position: 'absolute', top: 0, left: 0 }} />
+      <svg viewBox="0 0 24 24" width="32" height="32" xmlns="http://www.w3.org/2000/svg" style={{ position: 'absolute', top: 0, left: 0 }}>
+        {/* ピンのベース形状（水滴型） */}
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill={pinColor} />
+        {/* 立体感を出すグラデーション */}
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="url(#black-gradient)" />
+        {/* 中央の白い丸 */}
+        <circle cx="12" cy="9" r="3.5" fill="white" />
+      </svg>
     </div>
   ),
   iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
+  iconAnchor: [16, 30], // SVGの先端がピタッと座標を指すようにアンカーを調整
+  popupAnchor: [0, -30],
 });
 
 const userIcon = L.divIcon({
   className: 'user-location-marker',
   html: '<div class="pulse"></div><div class="dot"></div>',
   iconSize: [20, 20],
-  iconAnchor: [10, 10],
   popupAnchor: [0, -10]
 });
 
@@ -93,7 +97,7 @@ function ResizeMap({ sidebarHeight, isResizing }) {
 function Map() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   
-  const memories = Array.isArray(MapData) ? MapData : []; // さかきマップ用に変数を読み替え
+  const [memories, setMemories] = useState(Array.isArray(MapData) ? MapData : []);
   const validMemories = useMemo(() => memories.filter(f => f.latitude && f.longitude), [memories]);
 
   const [mapCenter, setMapCenter] = useState(null);
@@ -119,6 +123,29 @@ function Map() {
     fontSize: `${textSize}px`,
     fontFamily: fontFamily
   };
+
+  // バックエンドからデータを取得してピンを表示する処理
+  useEffect(() => {
+    const fetchMemories = async () => {
+      try {
+        const response = await fetch('/api/memories');
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setMemories(data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch memories:', error);
+      }
+    };
+    
+    fetchMemories(); // 初期読み込み
+
+    // 他の画面（アップロード画面）から送信が完了した合図を受け取ったら再フェッチする
+    window.addEventListener('memoriesUpdated', fetchMemories);
+    return () => window.removeEventListener('memoriesUpdated', fetchMemories);
+  }, []);
 
   const filteredMemories = useMemo(() => {
     const q = searchTerm.toLowerCase();
@@ -199,10 +226,25 @@ function Map() {
         },
         error => {
           console.error(error);
-          alert('現在地の取得に失敗しました。端末やブラウザの位置情報許可設定を確認してください。');
+          let errorMessage = '現在地の取得に失敗しました。';
+          switch (error.code) {
+            case 1: // PERMISSION_DENIED
+              errorMessage = '位置情報の利用が許可されていません。端末やブラウザの設定を確認してください。';
+              break;
+            case 2: // POSITION_UNAVAILABLE
+              errorMessage = '位置情報が取得できませんでした。電波状況の良い場所に移動するか、Wi-Fiをオンにしてみてください。';
+              break;
+            case 3: // TIMEOUT
+              errorMessage = '現在地の取得がタイムアウトしました。電波状況の良い場所で再度お試しください。';
+              break;
+            default:
+              errorMessage = '不明なエラーが発生しました。';
+              break;
+          }
+          alert(errorMessage);
           setIsLocating(false);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
     }
   };
@@ -271,6 +313,10 @@ function Map() {
       </style>
 
       <Box style={{ flex: 1, position: 'relative', width: '100%', height: '100%' }}>
+        {/* 画面上下の影（ビネット効果） */}
+        <Box style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '120px', background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 100%)', zIndex: 900, pointerEvents: 'none' }} />
+        <Box style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '120px', background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)', zIndex: 900, pointerEvents: 'none' }} />
+
         <MapContainer center={INITIAL_CENTER} zoom={13} zoomControl={false} attributionControl={false} style={{ height: '100%', width: '100%' }}>
           
           <TileLayer 

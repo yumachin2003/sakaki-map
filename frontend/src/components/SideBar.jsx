@@ -1,8 +1,7 @@
 import React from 'react';
 import { Box, Title, TextInput, Paper, CloseButton, Stack, Text, Divider, Group, Button, ScrollArea, List } from '@mantine/core';
-import { IconSearch, IconCar, IconTrain, IconMapPinFilled } from '@tabler/icons-react';
+import { IconSearch, IconCar, IconTrain } from '@tabler/icons-react';
 import { useDetailCard } from '../lv2';
-import { pinColor } from '../lv1';
 
 // === ユーティリティ関数 ===
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -109,11 +108,6 @@ export default function SideBar({
                       {/* 【Lv.1】文字スタイル連動 */}
                       <Text style={{ ...customTextStyle, color: 'white' }} fw={500}>{f.name}</Text>
                       <Text c="dimmed" size="xs">{f.location}</Text>
-                    </Box>
-                    {/* 【Lv.1】ピン色連動 */}
-                    <Box style={{ position: 'relative', width: 16, height: 16, flexShrink: 0 }}>
-                      <IconMapPinFilled size={16} color={pinColor} style={{ position: 'absolute', top: 0, left: 0 }} />
-                      <IconMapPinFilled size={16} color="url(#black-gradient)" style={{ position: 'absolute', top: 0, left: 0 }} />
                     </Box>
                   </Group>
                 </List.Item>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Modal, Box, Button, Group, Title, Text, Select, Image } from '@mantine/core';
+import { Modal, Box, Button, Group, Title, Text, Select, Image, Code } from '@mantine/core';
 import { IconSend, IconFileCode } from '@tabler/icons-react';
 import hljs from 'highlight.js/lib/core';
 import json from 'highlight.js/lib/languages/json';
@@ -8,30 +8,40 @@ import jsonErrorImage from '../assets/json_error.png';
 
 hljs.registerLanguage('json', json);
 
-// プロジェクト内の seed フォルダにある JSON ファイルをすべて自動取得
-const seedModules = import.meta.glob('../seed/*.json', { eager: true });
+// プロジェクト内の upload フォルダにある JSON ファイルをすべて自動取得
+const seedModules = import.meta.glob('../upload/*.json', { eager: true });
 
 export default function UploadPage({ opened, onClose }) {
-  const [files, setFiles] = useState([]);
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // モーダルを開いた時にファイルを自動読み込みする
+  // ファイルリストを動的に生成（ファイルの追加・削除時に即座に反映）
+  const files = useMemo(() => {
+    const loadedFiles = Object.entries(seedModules).map(([path, mod]) => {
+      const name = path.split('/').pop();
+      const data = mod.default !== undefined ? mod.default : mod;
+      return { name, content: JSON.stringify(data, null, 2), hasError: false };
+    });
+
+    if (loadedFiles.length === 0) {
+      return [{ name: 'エラー', content: '', hasError: true, isNoFile: true }];
+    }
+    return loadedFiles;
+  }, [seedModules]);
+
+  // モーダルを開いた時に選択状態をリセット
   useEffect(() => {
     if (opened) {
-      const loadedFiles = Object.entries(seedModules).map(([path, mod]) => {
-        const name = path.split('/').pop();
-        const data = mod.default !== undefined ? mod.default : mod;
-        return { name, content: JSON.stringify(data, null, 2), hasError: false };
-      });
-
-      if (loadedFiles.length === 0) {
-        setFiles([{ name: 'エラー', content: '', hasError: true, errorMessage: '送信できるファイルが見つかりません。' }]);
-      } else {
-        setFiles(loadedFiles);
-      }
       setSelectedFileIndex(0);
     }
   }, [opened]);
+
+  // ファイルが削除されて選択中のインデックスが範囲外になったらリセット
+  useEffect(() => {
+    if (selectedFileIndex >= files.length) {
+      setSelectedFileIndex(0);
+    }
+  }, [files.length, selectedFileIndex]);
 
   const currentFile = files.length > 0 ? files[selectedFileIndex] : { name: '未選択', content: '// 読み込み中...', hasError: false };
 
@@ -45,11 +55,54 @@ export default function UploadPage({ opened, onClose }) {
     }
   }, [currentFile.content]);
 
+  // サーバーへデータを送信する処理
+  const handleSubmit = async () => {
+    if (currentFile.hasError) return;
+    
+    setIsSubmitting(true);
+    try {
+      let payload = JSON.parse(currentFile.content);
+      
+      // バックエンドは配列（リスト）形式を要求するため、配列でない場合は自動補正する
+      if (!Array.isArray(payload)) {
+        if (payload.MapData && Array.isArray(payload.MapData)) {
+          payload = payload.MapData; // { "MapData": [...] } の形式だった場合
+        } else {
+          payload = [payload]; // 単一のオブジェクト { ... } だった場合
+        }
+      }
+      
+      // ViteのProxy機能を使って送信するため、相対パスだけでOK
+      const response = await fetch('/api/memories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'サーバーエラーが発生しました');
+      }
+
+      const result = await response.json();
+      alert(result.message || '送信に成功しました！');
+      window.dispatchEvent(new Event('memoriesUpdated')); // 地図コンポーネントにデータ更新を通知
+      onClose(); // 成功したらモーダルを閉じる
+    } catch (error) {
+      console.error('Submit error:', error);
+      alert(`送信エラー: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Modal
       opened={opened}
       onClose={onClose}
-      title={<Title order={3} c="white">データをサーバーへ送信</Title>}
+      title={<Text size="lg" fw={700} c="white">データをサーバーへ送信</Text>}
       size="xl"
       yOffset={100}
       radius={20}
@@ -103,7 +156,13 @@ export default function UploadPage({ opened, onClose }) {
           {currentFile.hasError ? (
             <Box p="md" style={{ textAlign: 'center' }}>
               <Image src={jsonErrorImage} alt="JSON Error" w="60%" maw={300} mx="auto" mb="md" />
-              <Text c="red" fw={700}>{currentFile.errorMessage || 'JSONファイルの形式が正しくありません。'}</Text>
+              {currentFile.isNoFile ? (
+                <Text c="red" fw={700}>
+                  <Code c="white" bg="rgba(255, 255, 255, 0.15)">src/upload</Code> フォルダ内に送信できるファイルが見つかりません。
+                </Text>
+              ) : (
+                <Text c="red" fw={700}>{currentFile.errorMessage || 'JSONファイルの形式が正しくありません。'}</Text>
+              )}
             </Box>
           ) : (
             <>
@@ -149,8 +208,9 @@ export default function UploadPage({ opened, onClose }) {
           <Button 
             color="cyan" 
             leftSection={<IconSend size={18} />} 
-            onClick={() => alert('送信しました！')}
+            onClick={handleSubmit}
             disabled={currentFile.hasError}
+            loading={isSubmitting}
           >
             送信
           </Button>

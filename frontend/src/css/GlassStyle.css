@@ -9,7 +9,7 @@
   --glass-bg-header-light: rgba(255, 255, 255, var(--glass-opacity));
   --glass-bg-modal-light: rgba(255, 255, 255, var(--glass-opacity));
   --glass-bg-input-light: rgba(255, 255, 255, var(--glass-opacity));
-  --glass-border-light: rgba(0, 0, 0, 0.1);
+  --glass-border-light: rgba(255, 255, 255, 0.5); /* 枠線の透明度を上げて馴染ませる */
   --glass-text-light: #333;
   --glass-text-dimmed-light: rgba(0, 0, 0, 0.5);
 
@@ -18,7 +18,7 @@
   --glass-bg-header-dark: rgba(30, 30, 30, var(--glass-opacity));
   --glass-bg-modal-dark: rgba(30, 30, 30, var(--glass-opacity));
   --glass-bg-input-dark: rgba(0, 0, 0, var(--glass-opacity));
-  --glass-border-dark: rgba(255, 255, 255, 0.1);
+  --glass-border-dark: rgba(255, 255, 255, 0.4); /* 枠線の透明度を上げて馴染ませる */
   --glass-text-dark: white;
   --glass-text-dimmed-dark: rgba(255, 255, 255, 0.5);
 
@@ -31,9 +31,10 @@
   --glass-radius-xl: 24px;
   --glass-radius-xxl: 40px;
 
-  --glass-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --glass-shadow-md: 0 8px 32px rgba(0, 0, 0, 0.2);
-  --glass-shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.3);
+  /* グロー（さらに薄く、上品な透け感に） */
+  --glass-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.15), 0 0 10px rgba(255, 255, 255, 0.1), 0 0 20px rgba(255, 255, 255, 0.05);
+  --glass-shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 3px rgba(255, 255, 255, 0.15), 0 0 15px rgba(255, 255, 255, 0.15), 0 0 30px rgba(255, 255, 255, 0.05);
+  --glass-shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 4px rgba(255, 255, 255, 0.2), 0 0 25px rgba(255, 255, 255, 0.2), 0 0 50px rgba(255, 255, 255, 0.1);
 }
 
 /* テーマに応じた変数の割り当て */
@@ -44,7 +45,7 @@
   --glass-bg-input: var(--glass-bg-input-light);
   --glass-border: var(--glass-border-light);
   --glass-text: var(--glass-text-light);
-  --glass-input-border: rgba(0, 0, 0, 0.2);
+  --glass-input-border: rgba(255, 255, 255, 0.6);
   --glass-input-placeholder: rgba(0, 0, 0, 0.5);
   --glass-text-dimmed: var(--glass-text-dimmed-light);
   --mantine-color-dimmed: var(--glass-text-dimmed-light);
@@ -59,7 +60,7 @@
   --glass-bg-input: var(--glass-bg-input-dark);
   --glass-border: var(--glass-border-dark);
   --glass-text: var(--glass-text-dark);
-  --glass-input-border: rgba(255, 255, 255, 0.2);
+  --glass-input-border: rgba(255, 255, 255, 0.4);
   --glass-input-placeholder: rgba(255, 255, 255, 0.5);
   --glass-text-dimmed: var(--glass-text-dimmed-dark);
   --mantine-color-dimmed: var(--glass-text-dimmed-dark);
@@ -76,30 +77,36 @@
 .glass-input,
 .glass-sidebar,
 .glass-map-control {
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* --- ヘッダー (App.js) --- */
-.glass-header {
-  background-color: var(--glass-bg-header) !important;
-  border-bottom: 1px solid var(--glass-border);
+header .header-wrapper {
+  margin: 20px 15% !important; /* インスペクタで見つけた完璧な余白（全体の配置と幅を決定） */
+}
+
+header .glass-panel {
+  background-color: var(--glass-bg-header) !important; /* ボタンの透明化を防ぎ、黒いガラス背景を適用 */
+  border-radius: 999px !important; /* カプセル型・完全な円形 */
+  border: 0.5px solid var(--glass-border) !important; /* ヘッダーにも光る枠線を追加 */
+  box-shadow: var(--glass-shadow-md) !important;
 }
 
 /* --- パネル・カード (Calendar.js, Map.js) --- */
 .glass-panel {
   background-color: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  border: 0.5px solid var(--glass-border);
   color: var(--glass-text);
 }
 
 /* --- モーダル (App.js, Calendar.js) --- */
 .glass-modal {
   background-color: var(--glass-bg-modal) !important;
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  border: 0.5px solid var(--glass-border);
   border-radius: var(--glass-radius-lg);
   box-shadow: var(--glass-shadow-md);
   color: var(--glass-text) !important;
@@ -116,7 +123,7 @@
   margin: 12px;
   height: calc(100% - 24px) !important;
   box-shadow: var(--glass-shadow-md);
-  border: 1px solid var(--glass-border);
+  border: 0.5px solid var(--glass-border);
   color: var(--glass-text) !important;
 }
 .glass-drawer-header {
@@ -127,16 +134,18 @@
 /* --- ツールチップ (App.js) --- */
 .glass-tooltip {
   background-color: rgba(20, 20, 20, 0.5) !important;
-  backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   color: var(--glass-text) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 0.5px solid rgba(255, 255, 255, 0.5);
 }
 
 /* --- 入力フォーム (App.js) --- */
 .glass-input {
   background-color: var(--glass-bg-input) !important;
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-input-border) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  border: 0.5px solid var(--glass-input-border) !important;
   color: var(--glass-text) !important;
 }
 .glass-input::placeholder {
@@ -148,16 +157,17 @@
   background-color: var(--glass-bg-input);
   border-radius: var(--glass-radius-md);
   padding: 16px;
-  backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
 }
 
 /* --- マップコントロール (Map.js) --- */
 /* Map.jsは強制ダークモードのため、固定色を使用 */
 .glass-map-control {
   background-color: rgba(20, 21, 23, var(--glass-opacity));
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  border: 0.5px solid rgba(255, 255, 255, 0.4);
   box-shadow: var(--glass-shadow-lg);
   color: #fff;
   overflow: hidden;
@@ -167,18 +177,18 @@
 /* Map.jsは強制ダークモードのため、固定色を使用 */
 .glass-sidebar {
   background-color: rgba(20, 21, 23, var(--glass-opacity));
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  border: 0.5px solid rgba(255, 255, 255, 0.4);
   box-shadow: var(--glass-shadow-lg);
 }
 
 /* --- Leaflet Popup (Map.js) --- */
 .leaflet-popup-content-wrapper {
   background: rgba(20, 21, 23, 0.85) !important;
-  backdrop-filter: blur(var(--glass-blur)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%) !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.4) !important;
   border-radius: var(--glass-radius-md) !important;
   color: #fff !important;
 }
@@ -189,9 +199,9 @@
 /* --- Leaflet Layers Control (Map.js) --- */
 .leaflet-control-layers {
   background-color: rgba(20, 21, 23, 0.85) !important;
-  backdrop-filter: blur(var(--glass-blur)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%) !important;
+  border: 0.5px solid rgba(255, 255, 255, 0.4) !important;
   border-radius: var(--glass-radius-md) !important;
   color: #fff !important;
 }
@@ -199,9 +209,9 @@
 /* --- 通知 (Notifications) --- */
 .glass-notification {
   background-color: var(--glass-bg-header) !important;
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  border: 0.5px solid var(--glass-border);
   box-shadow: var(--glass-shadow-md);
   border-radius: var(--glass-radius-md) !important;
 }
@@ -221,9 +231,9 @@
 /* --- ドロップダウン (AccountHoverCard.js) --- */
 .glass-dropdown {
   background-color: var(--glass-bg-modal) !important;
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  border: 0.5px solid var(--glass-border);
   box-shadow: var(--glass-shadow-md);
   border-radius: var(--glass-radius-md);
   color: var(--glass-text) !important;
