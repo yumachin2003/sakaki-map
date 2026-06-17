@@ -27,4 +27,4 @@ venv
 *.sw?
 
 *.db
-frontend/src/upload/
+frontend/src/upload/*.json
