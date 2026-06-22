@@ -16,7 +16,7 @@ CORS(
 
 
 # --- SQLiteデータベースの設定 ---
-base_dir = os.path.abspath(os.path.dirname(__file__))   # 現在のディレクトリを取得し、ベースディレクトリ（base_dir）に指定
+base_dir = os.path.abspath(os.path.dirname(__file__))   # 班番号(例: 101)が入る想定
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(base_dir, 'sakaki_map.db')}"  # データベースの指定
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False    # 変更追跡機能を無効化（メモリ消費を抑えるため）
 
@@ -113,6 +113,44 @@ def upload_memories():
         print(f"Error saving memories: {e}")
         # 予期せぬエラーが起きた場合でも、何が原因か詳細をフロントに返す
         return jsonify({'error': f'保存エラー: 入力データを確認してください。詳細: {str(e)}'}), 500
+
+
+# POST /api/update-path : 画像パスを更新
+@app.route('/sakaki-map/api/update-path', methods=['POST'])
+def update_path():
+    data = request.get_json()
+
+    # リクエストデータの検証
+    if not data:
+        return jsonify({'error': 'リクエストボディが空です'}), 400
+
+    pin_id = data.get('id')
+    image_path = data.get('image_path')
+
+    if pin_id is None or image_path is None:
+        return jsonify({'error': '「id」と「image_path」は必須です'}), 400
+
+    try:
+        # 指定されたIDのレコードを取得
+        memory = db.session.get(Memory, pin_id)
+
+        if not memory:
+            return jsonify({'error': f'ID {pin_id} のレコードが見つかりません'}), 404
+
+        # imageUrlカラムを更新
+        memory.imageUrl = image_path
+        db.session.commit()
+
+        return jsonify({
+            'message': f'ID {pin_id} の画像パスを更新しました',
+            'id': pin_id,
+            'image_path': image_path
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating image path: {e}")
+        return jsonify({'error': f'更新エラー: {str(e)}'}), 500
 
 
 if __name__ == '__main__':

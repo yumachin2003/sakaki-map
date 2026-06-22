@@ -9,6 +9,8 @@ import '../css/GlassStyle.css';
 // 生徒用の編集ファイルの読み込み
 import { pinColor, textColor, textSize, fontFamily } from '../lv1';
 import { useSatellite } from '../lv2';
+import { lv3PinId, lv3ImageURI } from '../lv3';
+
 import MapControl from '../components/MapControl';
 import SideBar from '../components/SideBar';
 const seedModules = import.meta.glob('../seed/MapData.*', { eager: true });
@@ -278,6 +280,30 @@ function Map() {
       window.removeEventListener('touchend', stopResizing);
     };
   }, [isResizing, sidebarHeight, snapPoints]);
+
+  useEffect(() => {
+    if (lv3PinId === 0 || lv3ImageURI === '') return;
+
+    const updateImagePath = async () => {
+      try {
+        const response = await fetch('/sakaki-map/api/update-path', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: lv3PinId,
+            image_path: lv3ImageURI
+          })
+        });
+
+        const result = await response.json();
+        console.log('Image path update result:', result);
+      } catch (error) {
+        console.error('Failed to update image path:', error);
+      }
+    };
+
+    updateImagePath();
+  }, []);
 
   return (
     <Box 

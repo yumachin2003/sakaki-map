@@ -9,7 +9,7 @@ import jsonErrorImage from '../assets/json_error.png';
 hljs.registerLanguage('json', json);
 
 // プロジェクト内の upload フォルダにある JSON ファイルをすべて自動取得
-const seedModules = import.meta.glob('../upload/*.json', { eager: true });
+const seedModules = import.meta.glob('../lv4/upload/*.json', { eager: true });
 
 export default function UploadPage({ opened, onClose }) {
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
