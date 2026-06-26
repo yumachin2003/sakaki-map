@@ -48,7 +48,10 @@ ul {
   padding: 0;
 }
 
-
+/* --- ヘッダー (App.js) --- */
+header .header-wrapper {
+  margin: 20px 10% !important; /* インスペクタで見つけた完璧な余白（全体の配置と幅を決定） */
+}
 
 /* テーブルスタイル */
 table {
