@@ -7,4 +7,4 @@
 
 export const pinColor = "red";            // ピンの色を指定する
 export const textSize = 15;               // 文字の大きさを数値で指定する
-export const fontFamily = "Cinecaption";   // フォントの種類を指定する
+export const fontFamily = "sans-serif";   // フォントの種類を指定する

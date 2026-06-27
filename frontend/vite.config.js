@@ -35,8 +35,8 @@ function autoDeployAndDbUpdatePlugin() {
             // === サーバー情報の設定（sekilab.orgなどの環境に合わせて書き換えてね） ===
             const REMOTE_USER = 'ubuntu'; 
             const REMOTE_HOST = '153.126.153.105'; 
-            const REMOTE_BASE_DIR = '/home/sakaki-map'; // サーバー側のプロジェクトルート
-            const API_ENDPOINT = 'https://sekilab.org//sakaki-map/api/update-path'; // DB更新用のAPI
+            const REMOTE_BASE_DIR = '/home/ubuntu/sakaki-map'; // サーバー側のプロジェクトルート
+            const API_ENDPOINT = 'http://127.0.0.1:5001/api/update-path'; // DB更新用のAPI
 
             // 2. 抽出したURIごとにSCPコマンドを実行する
             uris.forEach(uri => {
@@ -58,22 +58,33 @@ function autoDeployAndDbUpdatePlugin() {
             });
 
             // 3. Node.js側から直接バックエンドのAPIを叩いてDBを更新する
+            console.log('🔍 [Debug] 送信先のAPI_ENDPOINT:', API_ENDPOINT);
             console.log('📡 [DB Update] データベースの更新リクエストを送信中...');
-            
+
             fetch(API_ENDPOINT, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 id: id,
-                image_path: uris // バックエンドが配列を受け取れる前提
+                // ▼ データベースのString型に合わせて、配列をJSON文字列に変換して送る！
+                image_path: JSON.stringify(uris) 
               })
             })
-            .then(res => res.json())
+            .then(async (res) => {
+              // サーバーから 200 OK 以外が返ってきた時の処理
+              if (!res.ok) {
+                // エラー時はHTMLが返ってきているはずなので、その中身を見る！
+                const errorText = await res.text();
+                console.error(`❌ [DB Error] サーバーからエラー応答 (${res.status}):\n`, errorText.slice(0, 200));
+                return;
+              }
+              return res.json();
+            })
             .then(data => {
-              console.log('✅ [DB Success] データベースのImageURI更新完了！', data);
+              if (data) console.log('✅ [DB Success] データベースのImageURI更新を完了した。', data);
             })
             .catch(err => {
-              console.error('❌ [DB Error] データベース更新エラー:', err);
+              console.error('❌ [DB Error] 通信エラーが発生した:', err);
             });
           }
         } catch (error) {

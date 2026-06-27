@@ -119,18 +119,19 @@ function Map({ searchTerm, isMobile, setSharedMemories, searchTargetId, setSearc
     // 1. まず座標があるデータだけに絞り込む。
     let filtered = memories.filter(f => f.latitude && f.longitude);
 
-    // 2. useServerImg が false（ローカルプレビューモード）の時、フロントエンド側だけで画像をすり替える。
-    if (!useServerImg && lv3PinId !== 0 && lv3ImageURI) {
-      filtered = filtered.map(f => 
-        // IDが一致するピンを見つけたら、ImageURIをローカルの lv3ImageURI に書き換える。
-        String(f.id) === String(lv3PinId) 
-          ? { ...f, ImageURI: lv3ImageURI } 
-          : f
-      );
-    }
+    // 2. データを整形する（DBの imageUrl を ImageURI に変換 ＆ ローカル画像で上書き）
+    filtered = filtered.map(f => {
+      let images = f.imageUrl;
+
+      if (String(f.id) === String(lv3PinId) && lv3ImageURI) {
+        images = lv3ImageURI;
+      }
+
+      return { ...f, ImageURI: images };
+    });
 
     return filtered;
-  }, [memories]);
+  }, [memories, lv3PinId, lv3ImageURI]);
 
   const [mapCenter, setMapCenter] = useState(null);
   const [userLocation, setUserLocation] = useState(null);

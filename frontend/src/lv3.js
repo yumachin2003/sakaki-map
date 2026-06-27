@@ -6,8 +6,8 @@
  *  ④ パスは []（大カッコ）の中に書くようにし、それぞれを "" で囲み、 ,（カンマ）で区切る。
  */
 
-export const lv3PinId = 1;      // 更新対象のID
-export const lv3ImageURI = ["static/images/20220223151256.jpg", "static/images/Sakaki_Station,_ekisha.jpg"];  // 画像のパス
+export const lv3PinId = 0;      // 更新対象のID
+export const lv3ImageURI = [];  // 画像のパス
 
 // ▼ 説明があるまで true にしないこと！
-export const useServerImg = true; 
+export const useServerImg = false;

@@ -116,35 +116,67 @@ export default function SideBar({sidebarRef, isResizing, sidebarHeight, isMobile
                 )}
               </Box>
 
-              {/* 画像の表示 */}
+              {/* 画像の表示（デバッグ出力付き） */}
               <ScrollArea w="100%" offsetScrollbars>
                 <Box style={{ display: 'flex', gap: '8px', paddingBottom: '8px' }}>
-                  {Array.isArray(selectedMemory?.ImageURI) && selectedMemory.ImageURI.length > 0 ? (
-                    selectedMemory.ImageURI.map((url, i, arr) => (
-                      <Image
-                        key={i}
-                        src={url}
-                        alt={`${selectedMemory?.name || "画像"} ${i + 1}`}
-                        radius="md"
-                        h={200}
-                        // arr.length で配列の長さを直接見て、2枚以上ならチラ見せの280pxにする！
-                        w={arr.length > 1 ? 280 : '100%'} 
-                        fit="cover"
-                        fallbackSrc="https://placehold.co/600x400?text=No+Image"
-                        style={{ flexShrink: 0 }}
-                      />
-                    ))
-                  ) : (
-                    // 画像がない、または空配列だった場合の枠
-                    <Image
-                      src={null}
-                      alt={selectedMemory?.name || "画像"}
-                      radius="md"
-                      h={200}
-                      w="100%"
-                      fallbackSrc="https://placehold.co/600x400?text=No+Image"
-                    />
-                  )}
+                  {(() => {
+                    console.log("🕵️ [Debug 0] このピンの全データ:", selectedMemory);
+
+                    let imageList = [];
+                    const uriData = selectedMemory?.ImageURI;
+                    
+                    // 🔍 デバッグ1: 大元のデータがどんな形（型）で来ているかを確認する。
+                    console.log("📦 [Debug 1] 元のImageURIデータ:", uriData);
+                    console.log("📦 [Debug 1] データの型(typeof):", typeof uriData);
+                    console.log("📦 [Debug 1] 配列かどうか:", Array.isArray(uriData));
+                    
+                    if (uriData) {
+                      if (Array.isArray(uriData)) {
+                        imageList = uriData;
+                      } else if (typeof uriData === 'string') {
+                        try {
+                          imageList = JSON.parse(uriData);
+                        } catch (e) {
+                          imageList = uriData.split(',').map(s => s.trim()).filter(Boolean);
+                        }
+                      }
+                    }
+
+                    // 🔍 デバッグ2: 変換処理を通った後、ちゃんと配列になっているか確認する。
+                    console.log("✅ [Debug 2] 変換後のimageList:", imageList);
+
+                    if (imageList.length > 0) {
+                      return imageList.map((url, i, arr) => {
+                        // 🔍 デバッグ3: <Image> コンポーネントに渡される直前のURLを確認する。
+                        console.log(`🖼️ [Debug 3] 画像 ${i + 1} の最終パス:`, url);
+                        
+                        return (
+                          <Image
+                            key={i}
+                            src={url}
+                            alt={`${selectedMemory?.name || "画像"} ${i + 1}`}
+                            radius="md"
+                            h={200}
+                            w={arr.length > 1 ? 280 : '100%'} 
+                            fit="cover"
+                            fallbackSrc="https://placehold.co/600x400?text=No+Image"
+                            style={{ flexShrink: 0 }}
+                          />
+                        );
+                      });
+                    } else {
+                      return (
+                        <Image
+                          src={null}
+                          alt={selectedMemory?.name || "画像"}
+                          radius="md"
+                          h={200}
+                          w="100%"
+                          fallbackSrc="https://placehold.co/600x400?text=No+Image"
+                        />
+                      );
+                    }
+                  })()}
                 </Box>
               </ScrollArea>
 
