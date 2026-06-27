@@ -21,7 +21,7 @@ export default function SideBar({sidebarRef, isResizing, sidebarHeight, isMobile
         width: isMobile ? 'auto' : `${sidebarWidth}px`, height: `${sidebarHeight}px`,
         borderRadius: '20px 20px 0 0', touchAction: 'none',
         display: 'flex', flexDirection: 'column', zIndex: 1000, overflow: 'hidden',
-        transform: selectedMemory ? 'translateY(120%)' : 'translateY(0)',
+        transform: ( selectedMemory && useDetailCard ) ? 'translateY(120%)' : 'translateY(0)',
         transition: !isResizing ? 'height 0.3s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'transform 0.4s ease',
       }}>
         {/* リサイズ用のハンドル */}
@@ -117,14 +117,36 @@ export default function SideBar({sidebarRef, isResizing, sidebarHeight, isMobile
               </Box>
 
               {/* 画像の表示 */}
-              {selectedMemory?.ImageURI && (
-                <Image
-                  src={selectedMemory.ImageURI}
-                  alt={selectedMemory.name}
-                  radius="md"
-                  fallbackSrc="https://placehold.co/600x400?text=No+Image"
-                />
-              )}
+              <ScrollArea w="100%" offsetScrollbars>
+                <Box style={{ display: 'flex', gap: '8px', paddingBottom: '8px' }}>
+                  {Array.isArray(selectedMemory?.ImageURI) && selectedMemory.ImageURI.length > 0 ? (
+                    selectedMemory.ImageURI.map((url, i, arr) => (
+                      <Image
+                        key={i}
+                        src={url}
+                        alt={`${selectedMemory?.name || "画像"} ${i + 1}`}
+                        radius="md"
+                        h={200}
+                        // arr.length で配列の長さを直接見て、2枚以上ならチラ見せの280pxにする！
+                        w={arr.length > 1 ? 280 : '100%'} 
+                        fit="cover"
+                        fallbackSrc="https://placehold.co/600x400?text=No+Image"
+                        style={{ flexShrink: 0 }}
+                      />
+                    ))
+                  ) : (
+                    // 画像がない、または空配列だった場合の枠
+                    <Image
+                      src={null}
+                      alt={selectedMemory?.name || "画像"}
+                      radius="md"
+                      h={200}
+                      w="100%"
+                      fallbackSrc="https://placehold.co/600x400?text=No+Image"
+                    />
+                  )}
+                </Box>
+              </ScrollArea>
 
               {/* 説明文の表示 */}
               {selectedMemory?.detail && (

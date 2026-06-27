@@ -142,7 +142,7 @@ header .glass-panel[data-focused="true"] {
   backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   color: var(--glass-text) !important;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* --- 入力フォーム (App.js) --- */

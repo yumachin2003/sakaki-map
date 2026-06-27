@@ -3,6 +3,31 @@
   font-family: 'Keifont';
   src: url('../assets/keifont.ttf') format('truetype');
 }
+@font-face {
+  font-family: 'Mincho';
+  src: url('../assets/SourceHanSerif-SemiBold.otf') format('opentype');
+}
+@font-face {
+  font-family: 'Chikara-dzuyoku';
+  src: url('../assets/851CHIKARA-DZUYOKU_kanaA_004.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Chikara-yowaku';
+  src: url('../assets/851CHIKARA-YOWAKU_kanaA_004.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Cinecaption';
+  src: url('../assets/cinecaption226.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Mushin';
+  src: url('../assets/mushin.otf') format('opentype');
+}
+@font-face {
+  font-family: 'Fui-ji';
+  src: url('../assets/HuiFontP29.ttf') format('truetype');
+}
+
 
 /* グローバルスタイル */
 body {

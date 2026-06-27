@@ -116,7 +116,7 @@ def upload_memories():
 
 
 # POST /api/update-path : 画像パスを更新
-@app.route('/sakaki-map/api/update-path', methods=['POST'])
+@app.route('/api/update-path', methods=['POST'])
 def update_path():
     data = request.get_json()
 

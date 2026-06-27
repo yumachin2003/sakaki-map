@@ -7,7 +7,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../css/GlassStyle.css';
 // 生徒用の編集ファイルの読み込み
-import { pinColor, textColor, textSize, fontFamily } from '../lv1';
+import { pinColor, textSize, fontFamily } from '../lv1';
 import { useSatellite } from '../lv2';
 import { lv3PinId, lv3ImageURI, useServerImg } from '../lv3';
 
@@ -71,15 +71,18 @@ function MapRecenter({ center }) {
 }
 
 // === 要素の中央に移動するコンポーネント ===
-function MapBoundsHandler({ points, sidebarWidth, sidebarHeight, isMobile }) {
+function MapBoundsHandler({ points, sidebarWidth, sidebarHeight, isMobile, selectedMemoryId }) {
   const map = useMap();
   useEffect(() => {
     if (!points || points.length === 0) return;
     try {
       if (points.length === 1) {
         const currentZoom = map.getZoom();
-        // 16未満なら16まで寄る
-        const targetZoom = currentZoom < FOCUS_ZOOM_LEVEL ? FOCUS_ZOOM_LEVEL : currentZoom;
+
+        // ピンをクリックして選択した時だけ16（FOCUS_ZOOM_LEVEL）にズームし、初期表示は12（DEFAULT_ZOOM_LEVEL）を維持する
+        const targetZoom = selectedMemoryId 
+          ? (currentZoom < FOCUS_ZOOM_LEVEL ? FOCUS_ZOOM_LEVEL : currentZoom) 
+          : DEFAULT_ZOOM_LEVEL;
         
         const offset = isMobile ? [0, -sidebarHeight / 3 + 30] : [sidebarWidth / 2, 30];
         const targetCenter = map.unproject(map.project(points[0], targetZoom).subtract(offset), targetZoom);
@@ -93,7 +96,7 @@ function MapBoundsHandler({ points, sidebarWidth, sidebarHeight, isMobile }) {
         map.flyToBounds(bounds, { ...paddingOptions, animate: true, duration: 1.5, maxZoom: 15 });
       }
     } catch (e) { console.error(e); }
-  }, [points, map, sidebarWidth, sidebarHeight, isMobile]);
+  }, [points, map, sidebarWidth, sidebarHeight, isMobile, selectedMemoryId]);
   return null;
 }
 
@@ -110,9 +113,24 @@ function ResizeMap({ sidebarHeight, isResizing }) {
 }
 
 // === メインコンポーネント ===
-function Map({ searchTerm, isMobile }) {
+function Map({ searchTerm, isMobile, setSharedMemories, searchTargetId, setSearchTargetId }) {
   const [memories, setMemories] = useState(Array.isArray(MapData) ? MapData : []);
-  const validMemories = useMemo(() => memories.filter(f => f.latitude && f.longitude), [memories]);
+  const validMemories = useMemo(() => {
+    // 1. まず座標があるデータだけに絞り込む。
+    let filtered = memories.filter(f => f.latitude && f.longitude);
+
+    // 2. useServerImg が false（ローカルプレビューモード）の時、フロントエンド側だけで画像をすり替える。
+    if (!useServerImg && lv3PinId !== 0 && lv3ImageURI) {
+      filtered = filtered.map(f => 
+        // IDが一致するピンを見つけたら、ImageURIをローカルの lv3ImageURI に書き換える。
+        String(f.id) === String(lv3PinId) 
+          ? { ...f, ImageURI: lv3ImageURI } 
+          : f
+      );
+    }
+
+    return filtered;
+  }, [memories]);
 
   const [mapCenter, setMapCenter] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -138,13 +156,11 @@ function Map({ searchTerm, isMobile }) {
 
   const { ref: sidebarRef } = useElementSize();
   const { ref: titleOnlyRef, height: titleOnlyHeight } = useElementSize();
-  const { ref: cardRef, height: cardHeight } = useElementSize();
   
   const markerRefs = useRef({});
 
   // 【Lv.1】設定したテキストスタイルを一括管理
   const customTextStyle = {
-    color: textColor,
     fontSize: `${textSize}px`,
     fontFamily: fontFamily
   };
@@ -172,10 +188,28 @@ function Map({ searchTerm, isMobile }) {
     return () => window.removeEventListener('memoriesUpdated', fetchMemories);
   }, []);
 
-  const filteredMemories = useMemo(() => {
-    const q = searchTerm.toLowerCase();
-    return validMemories.filter(f => f.name?.toLowerCase().includes(q) || f.location?.toLowerCase().includes(q));
-  }, [validMemories, searchTerm]);
+  // 1. データが読み込まれたら App.jsx に共有する
+  useEffect(() => {
+    if (setSharedMemories) {
+      setSharedMemories(validMemories);
+    }
+  }, [validMemories, setSharedMemories]);
+
+  // 2. App.jsx の検索ドロップダウンから選ばれた時にピンを選択＆ズームする
+  useEffect(() => {
+    if (searchTargetId) {
+      const target = validMemories.find(f => f.id === searchTargetId);
+      if (target) {
+        setSelectedMemoryId(searchTargetId);
+        if (userLocation && isLocationActive) {
+          setFitPoints([[target.latitude, target.longitude], userLocation]);
+        } else {
+          setFitPoints([[target.latitude, target.longitude]]);
+        }
+      }
+      if (setSearchTargetId) setSearchTargetId(null); // 処理が終わったらリセット
+    }
+  }, [searchTargetId, validMemories, userLocation, isLocationActive, setSearchTargetId]);
 
   const selectedMemory = useMemo(() => 
     validMemories.find(f => f.id === selectedMemoryId), 
@@ -287,34 +321,6 @@ function Map({ searchTerm, isMobile }) {
     };
   }, [isResizing, sidebarHeight, snapPoints]);
 
-  useEffect(() => {
-    if (lv3PinId === 0 || lv3ImageURI === '') return;
-
-    const updateImagePath = async () => {
-      try {
-        const response = await fetch('/sakaki-map/api/update-path', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: lv3PinId,
-            image_path: lv3ImageURI
-          })
-        });
-
-        const result = await response.json();
-        console.log('Image path update result:', result);
-      } catch (error) {
-        console.error('Failed to update image path:', error);
-      }
-    };
-
-    if (useServerImg === false) {
-      console.log('Server image update skipped (Using local image)');
-    } else {
-      updateImagePath();
-    }
-  }, [lv3PinId, lv3ImageURI, useServerImg]);
-
   return (
     <div
       className="festival-map-container"
@@ -373,10 +379,10 @@ function Map({ searchTerm, isMobile }) {
           </div>
 
           <MapRecenter center={mapCenter} />
-          <MapBoundsHandler points={fitPoints} sidebarWidth={sidebarWidth} sidebarHeight={sidebarHeight} isMobile={isMobile} />
+          <MapBoundsHandler points={fitPoints} sidebarWidth={sidebarWidth} sidebarHeight={sidebarHeight} isMobile={isMobile} selectedMemoryId={selectedMemoryId} />
           <ResizeMap sidebarHeight={sidebarHeight} isResizing={isResizing} />
 
-          {filteredMemories.map(f => (
+          {validMemories.map(f => (
             <Marker 
               key={f.id} position={[f.latitude, f.longitude]} 
               icon={customPinIcon}
@@ -413,11 +419,10 @@ function Map({ searchTerm, isMobile }) {
         titleOnlyRef={titleOnlyRef}
         customTextStyle={customTextStyle}
         selectedMemory={selectedMemory}
-        cardRef={cardRef}
         handleReset={handleReset}
         userLocation={userLocation}
         selectedMemoryId={selectedMemoryId}
-        filteredMemories={filteredMemories}
+        filteredMemories={validMemories}
         setSelectedMemoryId={setSelectedMemoryId}
         setFitPoints={setFitPoints}
         isLocationActive={isLocationActive}

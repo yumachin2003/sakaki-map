@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Modal, Box, Button, Group, Title, Text, Select, Image, Code } from '@mantine/core';
-import { IconSend, IconFileCode } from '@tabler/icons-react';
+import { Modal, Box, Button, Group, Title, Text, Select, Image, Code, Stack, NavLink, Tooltip, ActionIcon } from '@mantine/core';
+import { IconSend, IconFileCode, IconArrowLeft, IconFolderOpen, IconChevronDown } from '@tabler/icons-react';
 import hljs from 'highlight.js/lib/core';
 import json from 'highlight.js/lib/languages/json';
 import 'highlight.js/styles/vs2015.css'; // VS Code風のダークテーマ
@@ -12,7 +12,7 @@ hljs.registerLanguage('json', json);
 const seedModules = import.meta.glob('../lv4/upload/*.json', { eager: true });
 
 export default function UploadPage({ opened, onClose }) {
-  const [selectedFileIndex, setSelectedFileIndex] = useState(0);
+  const [selectedFileIndex, setSelectedFileIndex] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ファイルリストを動的に生成（ファイルの追加・削除時に即座に反映）
@@ -32,7 +32,7 @@ export default function UploadPage({ opened, onClose }) {
   // モーダルを開いた時に選択状態をリセット
   useEffect(() => {
     if (opened) {
-      setSelectedFileIndex(0);
+      setSelectedFileIndex(null);
     }
   }, [opened]);
 
@@ -43,17 +43,18 @@ export default function UploadPage({ opened, onClose }) {
     }
   }, [files.length, selectedFileIndex]);
 
-  const currentFile = files.length > 0 ? files[selectedFileIndex] : { name: '未選択', content: '// 読み込み中...', hasError: false };
+  const currentFile = selectedFileIndex !== null && files.length > 0 ? files[selectedFileIndex] : null;
 
   // ファイルの内容が変更された時にハイライト処理を実行
   const highlightedCode = useMemo(() => {
+    if (!currentFile) return '';
     try {
       return hljs.highlight(currentFile.content, { language: 'json' }).value;
     } catch (error) {
       console.error("Syntax highlight error:", error);
       return currentFile.content;
     }
-  }, [currentFile.content]);
+  }, [currentFile]);
 
   // サーバーへデータを送信する処理
   const handleSubmit = async () => {
@@ -104,8 +105,9 @@ export default function UploadPage({ opened, onClose }) {
       onClose={onClose}
       title={<Text size="lg" fw={700} c="white">データをサーバーへ送信</Text>}
       size="xl"
-      yOffset={100}
+      yOffset="5vh"
       radius={20}
+      zIndex={10010}
       overlayProps={{
         backgroundOpacity: 0.55,
         blur: 3,
@@ -116,100 +118,166 @@ export default function UploadPage({ opened, onClose }) {
       }}
       styles={{
         header: { borderBottom: '1px solid rgba(255, 255, 255, 0.1)' },
-        body: { padding: 0 },
+        body: { padding: 0, overflow: 'hidden' },
         close: { color: 'white' }
       }}
     >
-
       {/* メイン部分（エディタ風プレビュー） */}
-      <Box p="md" style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: 'calc(100vh - 300px)' }}>
-        <Group justify="space-between">
-          <Group gap="xs">
-            <IconFileCode size={20} color="#4dabf7" />
-            {files.length > 1 ? (
-              <Select
-                data={files.map((f, i) => ({ value: String(i), label: f.name }))}
-                value={String(selectedFileIndex)}
-                onChange={(val) => setSelectedFileIndex(Number(val))}
-                size="sm"
-                variant="unstyled"
-                styles={{ input: { color: '#C1C2C5', fontWeight: 700 } }}
-                allowDeselect={false}
-              />
-            ) : (
-              <Text c="dimmed" size="sm" fw={700}>{currentFile.name}</Text>
-            )}
-          </Group>
-        </Group>
-
+      <Box p="md" style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: 'calc(85vh - 80px)' }}>
+        
+        {/* ▼ 【変更】「upload」フォルダのヘッダーを条件分岐の外に出して、常に一番上に固定する！ */}
         <Box style={{ 
           flex: 1, 
-          backgroundColor: '#1e1e1e', // VSCodeのダークテーマ風の背景色
+          backgroundColor: '#1e1e1e', 
           borderRadius: '8px', 
           border: '1px solid #373a40',
-          overflow: 'auto',
+          overflow: 'hidden', 
           display: 'flex',
-          minHeight: 0,
-          alignItems: currentFile.hasError ? 'center' : 'stretch',
-          justifyContent: currentFile.hasError ? 'center' : 'flex-start'
+          flexDirection: 'column'
         }}>
-          {currentFile.hasError ? (
-            <Box p="md" style={{ textAlign: 'center' }}>
-              <Image src={jsonErrorImage} alt="JSON Error" w="60%" maw={300} mx="auto" mb="md" />
-              {currentFile.isNoFile ? (
-                <Text c="red" fw={700}>
-                  <Code c="white" bg="rgba(255, 255, 255, 0.15)">src/upload</Code> フォルダ内に送信できるファイルが見つかりません。
-                </Text>
+          {/* 常に表示されるフォルダヘッダー */}
+          <Group gap="sm" px="md" py="xs" style={{ backgroundColor: '#252526', borderBottom: '1px solid #373a40' }}>
+            <IconChevronDown size={16} color="#cccccc" />
+            <IconFolderOpen size={18} color="#dcb67a" />
+            <Text c="#cccccc" size="sm" fw={700} style={{ letterSpacing: '1px', fontFamily: 'Menlo, Monaco, Consolas, monospace' }}>
+              upload
+            </Text>
+          </Group>
+
+          {selectedFileIndex === null ? (
+            // ----------------------------------------------------
+            // ① ファイル一覧 ＆ ファイルがない時のエラー表示
+            // ----------------------------------------------------
+            <Box style={{ flex: 1, overflowY: 'auto', paddingTop: '4px', paddingBottom: '10px' }}>
+              {files.length === 1 && files[0].isNoFile ? (
+                // ファイルが1つもない時（フォルダの「中」にエラーを表示する）
+                <Box style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <Image src={jsonErrorImage} alt="JSON Error" h="auto" mah={100} w="auto" fit="contain" mx="auto" mb="md" />
+                  <Text size="sm" c="red">
+                    エラー: フォルダ内に送信できるファイルが見つかりません。
+                  </Text>
+                </Box>
               ) : (
-                <Text c="red" fw={700}>{currentFile.errorMessage || 'JSONファイルの形式が正しくありません。'}</Text>
+                // ファイルがある時はリストを表示する
+                files.map((file, i) => (
+                  <NavLink
+                    key={i}
+                    label={file.name}
+                    leftSection={<IconFileCode size={18} color="#cbcb41" />} 
+                    rightSection={
+                      <Text size="xs" c="#858585" fw={700} style={{ fontFamily: 'Menlo, Monaco, Consolas, monospace' }}>
+                        ＞
+                      </Text>
+                    }
+                    onClick={() => setSelectedFileIndex(i)}
+                    styles={{
+                      root: {
+                        paddingLeft: '44px',
+                        paddingTop: '6px',
+                        paddingBottom: '6px',
+                        color: '#cccccc',
+                        '&:hover': {
+                          backgroundColor: '#2a2d2e',
+                          color: '#ffffff'
+                        }
+                      },
+                      label: { 
+                        fontSize: '14px',
+                        fontFamily: 'Menlo, Monaco, Consolas, monospace',
+                      }
+                    }}
+                  />
+                ))
               )}
             </Box>
           ) : (
-            <>
-              {/* 行番号 */}
+            // ----------------------------------------------------
+            // ② プレビュー画面 ＆ 構文エラー画面
+            // ----------------------------------------------------
+            <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {/* ▼ 「フォルダに戻る」バー（VSCodeのタブ・パンくずリスト風） */}
+              <Group px="md" py="xs" gap="sm" style={{ borderBottom: '1px solid #333' }}>
+                
+                {/* ツールチップ付きのアイコンボタン */}
+                <Tooltip label="フォルダに戻る" size="xs" zIndex={10011} position="bottom" withArrow classNames={{ tooltip: 'glass-tooltip' }} styles={{ tooltip: { fontSize: '12px', padding: '4px 8px' } }}>
+                  <ActionIcon 
+                    variant="subtle" 
+                    color="gray" 
+                    onClick={() => setSelectedFileIndex(null)}
+                  >
+                    <IconArrowLeft size={18} />
+                  </ActionIcon>
+                </Tooltip>
+
+                {/* ファイルアイコンとファイル名を左寄せで並べる */}
+                <IconFileCode size={18} color="#cbcb41" />
+                <Text c="#cccccc" size="sm" fw={700} style={{ fontFamily: 'Menlo, Monaco, Consolas, monospace' }}>
+                  {currentFile?.name}
+                </Text>
+              </Group>
+
+              {/* コード本体 or JSON形式エラーの表示 */}
               <Box style={{ 
-                padding: '16px 8px', 
-                backgroundColor: '#1e1e1e', 
-                color: '#858585', 
-                textAlign: 'right',
-                fontFamily: 'Menlo, Monaco, Consolas, monospace',
-                fontSize: '14px',
-                userSelect: 'none',
-                borderRight: '1px solid #333',
-                position: 'sticky',
-                left: 0
+                flex: 1, 
+                overflow: 'auto',
+                display: 'flex',
+                alignItems: currentFile?.hasError ? 'center' : 'stretch',
+                justifyContent: currentFile?.hasError ? 'center' : 'flex-start'
               }}>
-                {currentFile.content.split('\n').map((_, i) => (
-                  <div key={i}>{i + 1}</div>
-                ))}
+                {currentFile?.hasError ? (
+                  // JSONの書き方が間違っている時のエラー
+                  <Box p="xl" style={{ textAlign: 'center' }}>
+                    <Image src={jsonErrorImage} alt="JSON Error" h="auto" mah={100} w="auto" fit="contain" mx="auto" mb="md" />
+                    <Text c="red" fw={700}>{currentFile.errorMessage || 'JSONファイルの形式が正しくありません。'}</Text>
+                  </Box>
+                ) : (
+                  <>
+                    <Box style={{ 
+                      padding: '16px 8px', 
+                      backgroundColor: '#1e1e1e', 
+                      color: '#858585', 
+                      textAlign: 'right',
+                      fontFamily: 'Menlo, Monaco, Consolas, monospace',
+                      fontSize: '14px',
+                      userSelect: 'none',
+                      borderRight: '1px solid #333',
+                      position: 'sticky',
+                      left: 0
+                    }}>
+                      {currentFile?.content.split('\n').map((_, i) => (
+                        <div key={i}>{i + 1}</div>
+                      ))}
+                    </Box>
+                    <pre style={{ 
+                      margin: 0, 
+                      padding: '16px', 
+                      color: '#d4d4d4', 
+                      fontFamily: 'Menlo, Monaco, Consolas, monospace',
+                      fontSize: '14px',
+                      flex: 1,
+                      minWidth: 'max-content'
+                    }}>
+                      <code 
+                        className="hljs language-json"
+                        style={{ background: 'transparent', padding: 0 }}
+                        dangerouslySetInnerHTML={{ __html: highlightedCode }}
+                      />
+                    </pre>
+                  </>
+                )}
               </Box>
-              {/* コード表示部分 */}
-              <pre style={{ 
-                margin: 0, 
-                padding: '16px', 
-                color: '#d4d4d4', 
-                fontFamily: 'Menlo, Monaco, Consolas, monospace',
-                fontSize: '14px',
-                flex: 1,
-                minWidth: 'max-content'
-              }}>
-                <code 
-                  className="hljs language-json"
-                  style={{ background: 'transparent', padding: 0 }}
-                  dangerouslySetInnerHTML={{ __html: highlightedCode }}
-                />
-              </pre>
-            </>
+            </Box>
           )}
         </Box>
 
-        {/* フッター（ボタン類） */}
+        {/* フッター（送信ボタン） */}
         <Group justify="flex-end">
           <Button 
             color="cyan" 
             leftSection={<IconSend size={18} />} 
             onClick={handleSubmit}
-            disabled={currentFile.hasError}
+            // ▼ currentFile が null の時や、エラーがある時はボタンを押せなくする。
+            disabled={!currentFile || currentFile.hasError || currentFile.isNoFile}
             loading={isSubmitting}
           >
             送信
