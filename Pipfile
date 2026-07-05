@@ -4,11 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-flask-cors = "*"
-flask = "*"
-flask-sqlalchemy = "*"
+types-flask-sqlalchemy = "*"
 
 [dev-packages]
+types-flask-sqlalchemy = "*"
+sqlalchemy = {extras = ["mypy"], version = "*"}
 
 [requires]
 python_version = "3.13"

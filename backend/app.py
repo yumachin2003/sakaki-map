@@ -3,13 +3,14 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 
-app = Flask(__name__)
+BASE_PATH = '/sakaki-map'
 
+app = Flask(__name__, static_folder='dist', static_url_path=BASE_PATH)
 
-# --- CORS設定（Viteの5173ポートからアクセスできるようにする） ---
+# --- CORS設定 ---
 CORS(
     app,
-    resources={r"/api/*": {"origins": "*"}}, # どの端末からでもアクセスできるように変更
+    resources={rf"{BASE_PATH}/api/*": {"origins": "*"}}, # どの端末からでもアクセスできるように変更
     allow_headers=["Content-Type"],
     methods=["GET", "POST", "OPTIONS"],
 )
@@ -53,13 +54,13 @@ with app.app_context():
 # --- APIの定義 ---
 
 # GET /api/memories : 保存されている全員の思い出データを取得する
-@app.route('/api/memories', methods=['GET'])
+@app.route(f'{BASE_PATH}/api/memories', methods=['GET'])
 def get_memories():
     memories = Memory.query.all()
     return jsonify([m.to_dict() for m in memories]), 200
 
 # POST /api/memories : 子供たちがLv.4で送信するJSONを受け取る
-@app.route('/api/memories', methods=['POST'])
+@app.route(f'{BASE_PATH}/api/memories', methods=['POST'])
 def upload_memories():
     data = request.get_json()
 
@@ -116,7 +117,7 @@ def upload_memories():
 
 
 # POST /api/update-path : 画像パスを更新
-@app.route('/api/update-path', methods=['POST'])
+@app.route(f'{BASE_PATH}/api/update-path', methods=['POST'])
 def update_path():
     data = request.get_json()
 
