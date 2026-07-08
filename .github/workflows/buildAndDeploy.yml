@@ -1,0 +1,75 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. フロントエンドのビルド
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Prepare deploy folder
+        run: |
+          mkdir -p dist
+          cp -r frontend/dist/* dist/
+
+      # 2. バージョンタグの自動取得
+      - name: Get latest tag and increment
+        id: auto_tag
+        run: |
+          HUB_TOKEN=$(curl -s -H "Content-Type: application/json" \
+            -X POST \
+            -d "{\"username\": \"${{ secrets.DOCKERHUB_USERNAME }}\", \"password\": \"${{ secrets.DOCKERHUB_TOKEN }}\"}" \
+            https://hub.docker.com/v2/users/login/ | jq -r .token)
+
+          REPO="${{ secrets.DOCKERHUB_USERNAME }}/sakaki-map-backend"
+          LATEST_TAG=$(curl -s -H "Authorization: Bearer ${HUB_TOKEN}" \
+            "https://hub.docker.com/v2/repositories/${REPO}/tags/?page_size=1" | jq -r '.results[0].name')
+
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          
+          if [[ $COMMIT_MSG =~ v([0-9.]+) ]]; then
+            NEW_TAG="${BASH_REMATCH[1]}"
+          else
+            if [ "$LATEST_TAG" == "null" ] || [ "$LATEST_TAG" == "latest" ] || [[ ! $LATEST_TAG =~ ^[0-9.]+$ ]]; then
+              NEW_TAG="1.0"
+            else
+              NEW_TAG=$(echo "$LATEST_TAG + 0.1" | bc | xargs printf "%.1f")
+            fi
+          fi
+          echo "tag=${NEW_TAG}" >> $GITHUB_OUTPUT
+
+      # 3. バックエンドの Docker イメージビルド＆プッシュ
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/sakaki-map-backend:v${{ steps.auto_tag.outputs.tag }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/sakaki-map-backend:latest
+
+      # 4. SCPでサーバーへ転送
+      - name: Copy frontend to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "dist"
+          target: "/home/j22069yn/sakaki-map"
