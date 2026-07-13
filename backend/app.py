@@ -18,7 +18,9 @@ CORS(
 
 # --- SQLiteデータベースの設定 ---
 base_dir = os.path.abspath(os.path.dirname(__file__))   # 班番号(例: 101)が入る想定
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(base_dir, 'sakaki_map.db')}"  # データベースの指定
+db_dir = '/app/instance'
+os.makedirs(db_dir, exist_ok=True) # フォルダがなければ自動作成
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(db_dir, 'sakaki_map.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False    # 変更追跡機能を無効化（メモリ消費を抑えるため）
 
 db = SQLAlchemy(app)
