@@ -74,7 +74,7 @@ export default function UploadPage({ opened, onClose }) {
       }
       
       // ViteのProxy機能を使って送信するため、相対パスだけでOK
-      const response = await fetch('/api/memories', {
+      const response = await fetch('/sakaki-map/api/memories', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

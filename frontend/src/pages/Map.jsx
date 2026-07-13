@@ -170,7 +170,7 @@ function Map({ searchTerm, isMobile, setSharedMemories, searchTargetId, setSearc
   useEffect(() => {
     const fetchMemories = async () => {
       try {
-        const response = await fetch('/api/memories');
+        const response = await fetch('/sakaki-map/api/memories');
         if (response.ok) {
           const data = await response.json();
           if (Array.isArray(data) && data.length > 0) {
