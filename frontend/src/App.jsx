@@ -247,7 +247,7 @@ function AppContent() {
 export default function App() {
   return (
     <MantineProvider theme={theme} defaultColorScheme="dark">
-      <BrowserRouter>
+      <BrowserRouter basename="/sakaki-map">
         <Opening />
         <AppContent />
       </BrowserRouter>

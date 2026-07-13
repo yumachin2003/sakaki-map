@@ -98,6 +98,7 @@ function autoDeployAndDbUpdatePlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), basicSsl(), autoDeployAndDbUpdatePlugin()],
+  base: '/sakaki-map/',
   server: {
     open: true,
     host: true,
