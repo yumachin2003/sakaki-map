@@ -5,7 +5,7 @@
   "scripts": {
     "backend": "cd backend && pipenv run flask run --debug --host=0.0.0.0 --port=5001",
     "frontend": "cd frontend && npm run dev",
-    "tunnel": "ssh -4 -L 5001:127.0.0.1:5001 ubuntu@153.126.153.105 -N",
+    "tunnel": "ssh -4 -L 5001:127.0.0.1:5001 j22069yn@133.242.152.98 -N",
     "dev": "concurrently --kill-others-on-fail --handle-input --kill-signal SIGINT \"npm:backend\" \"npm:frontend\""
   },
   "dependencies": {

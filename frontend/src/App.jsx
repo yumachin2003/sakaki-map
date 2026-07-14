@@ -11,6 +11,12 @@ import '@mantine/core/styles.css';
 import './css/GlassStyle.css';
 import './css/App.css';
 
+export const getApiBaseUrl = () => {
+  // HTTPS環境からHTTP（5001ポート）への直接アクセスはブラウザのセキュリティ（Mixed Content）でブロックされます。
+  // そのため、常にViteのプロキシ経由（相対パス）で通信するように空文字を返します。
+  return '';
+};
+
 const theme = createTheme({
   primaryColor: 'blue',
   defaultRadius: 'md',

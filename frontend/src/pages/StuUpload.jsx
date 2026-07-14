@@ -5,6 +5,7 @@ import hljs from 'highlight.js/lib/core';
 import json from 'highlight.js/lib/languages/json';
 import 'highlight.js/styles/vs2015.css'; // VS Code風のダークテーマ
 import jsonErrorImage from '../assets/json_error.png';
+import { getApiBaseUrl } from '../App';
 
 hljs.registerLanguage('json', json);
 
@@ -73,8 +74,8 @@ export default function UploadPage({ opened, onClose }) {
         }
       }
       
-      // ViteのProxy機能を使って送信するため、相対パスだけでOK
-      const response = await fetch('/sakaki-map/api/memories', {
+      // ViteのProxy機能を使って送信するため、相対パスだけでOK（開発環境の場合はport5001を指定）
+      const response = await fetch(`${getApiBaseUrl()}/sakaki-map/api/memories`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
