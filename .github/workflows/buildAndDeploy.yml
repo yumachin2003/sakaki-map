@@ -60,6 +60,7 @@ jobs:
         with:
           context: ./backend
           push: true
+          no-cache: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/sakaki-map-backend:v${{ steps.auto_tag.outputs.tag }}
             ${{ secrets.DOCKERHUB_USERNAME }}/sakaki-map-backend:latest
