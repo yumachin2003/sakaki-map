@@ -6,10 +6,7 @@ import { useElementSize } from '@mantine/hooks';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../css/GlassStyle.css';
-// 生徒用の編集ファイルの読み込み
-import { pinColor, textSize, fontFamily } from '../lv1';
 import { useSatellite } from '../lv2';
-import { lv3PinId, lv3ImageURI, useServerImg } from '../lv3';
 import { getApiBaseUrl } from '../App';
 
 import MapControl from '../components/MapControl';
@@ -34,8 +31,8 @@ const INITIAL_CENTER = calculateCenter(MapData);
 const DEFAULT_ZOOM_LEVEL = 12;
 const FOCUS_ZOOM_LEVEL = 16;
 
-// 【Lv.1】設定したpinColorを反映するカスタムピン
-const customPinIcon = L.divIcon({
+// 【Lv.1】設定したpinColorを反映するカスタムピンを動的に生成する関数
+const createCustomPinIcon = (pinColor = 'red') => L.divIcon({
   className: 'custom-pin',
   html: renderToString(
     <div style={{ 
@@ -114,7 +111,7 @@ function ResizeMap({ sidebarHeight, isResizing }) {
 }
 
 // === メインコンポーネント ===
-function Map({ searchTerm, isMobile, setSharedMemories, searchTargetId, setSearchTargetId }) {
+function Map({ isMobile, setSharedMemories, searchTargetId, setSearchTargetId }) {
   const [memories, setMemories] = useState(Array.isArray(MapData) ? MapData : []);
   const validMemories = useMemo(() => {
     // 1. まず座標があるデータだけに絞り込む。
@@ -123,16 +120,11 @@ function Map({ searchTerm, isMobile, setSharedMemories, searchTargetId, setSearc
     // 2. データを整形する（DBの imageUrl を ImageURI に変換 ＆ ローカル画像で上書き）
     filtered = filtered.map(f => {
       let images = f.imageUrl;
-
-      if (String(f.id) === String(lv3PinId) && lv3ImageURI) {
-        images = lv3ImageURI;
-      }
-
       return { ...f, ImageURI: images };
     });
 
     return filtered;
-  }, [memories, lv3PinId, lv3ImageURI]);
+  }, [memories]);
 
   const [mapCenter, setMapCenter] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -161,11 +153,7 @@ function Map({ searchTerm, isMobile, setSharedMemories, searchTargetId, setSearc
   
   const markerRefs = useRef({});
 
-  // 【Lv.1】設定したテキストスタイルを一括管理
-  const customTextStyle = {
-    fontSize: `${textSize}px`,
-    fontFamily: fontFamily
-  };
+  // 【Lv.1】設定したテキストスタイルを一括管理（グローバル変数依存を削除）
 
   // バックエンドからデータを取得してピンを表示する処理
   useEffect(() => {
@@ -228,7 +216,7 @@ function Map({ searchTerm, isMobile, setSharedMemories, searchTargetId, setSearc
     const midH = window.innerHeight * 0.40;
     const maxH = window.innerHeight * 0.85;
     return [minH, midH, maxH, maxH];
-  }, [titleOnlyHeight, isMobile]);
+  }, [titleOnlyHeight]);
 
   const [sidebarHeight, setSidebarHeight] = useState(window.innerHeight * 0.40);
 
@@ -387,12 +375,12 @@ function Map({ searchTerm, isMobile, setSharedMemories, searchTargetId, setSearc
           {validMemories.map(f => (
             <Marker 
               key={f.id} position={[f.latitude, f.longitude]} 
-              icon={customPinIcon}
+              icon={createCustomPinIcon(f.pinColor || 'red')}
               ref={el => (markerRefs.current[f.id] = el)}
               eventHandlers={{ 
                 mouseover: (e) => e.target.openPopup(),
                 mouseout: (e) => { if (selectedMemoryId !== f.id) e.target.closePopup(); },
-                click: (e) => { 
+                click: () => { 
                   setSelectedMemoryId(f.id);
                   if (userLocation && isLocationActive) {
                     setFitPoints([[f.latitude, f.longitude], userLocation]);
@@ -419,7 +407,6 @@ function Map({ searchTerm, isMobile, setSharedMemories, searchTargetId, setSearc
         startResizing={startResizing}
         snapPoints={snapPoints}
         titleOnlyRef={titleOnlyRef}
-        customTextStyle={customTextStyle}
         selectedMemory={selectedMemory}
         handleReset={handleReset}
         userLocation={userLocation}

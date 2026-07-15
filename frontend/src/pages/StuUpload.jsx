@@ -74,6 +74,12 @@ export default function UploadPage({ opened, onClose }) {
         }
       }
       
+      // DBの設定（backend/app.py）に合わせて、フロントエンド特有の ImageURI を imageUrl にマッピングする
+      payload = payload.map(item => ({
+        ...item,
+        imageUrl: item.imageUrl || item.ImageURI
+      }));
+      
       // ViteのProxy機能を使って送信するため、相対パスだけでOK（開発環境の場合はport5001を指定）
       const response = await fetch(`${getApiBaseUrl()}/sakaki-map/api/memories`, {
         method: 'POST',

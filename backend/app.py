@@ -40,12 +40,20 @@ class Account(db.Model):
     memories = db.relationship('Memory', backref='author', lazy=True)
     added_images = db.relationship('MemoryImage', backref='author', lazy=True)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'pinColor': self.pinColor,
+            'textSize': float(self.textSize),
+            'fontFamily': self.fontFamily
+        }
+
 # Memoryモデル（地図上のピン・思い出の場所を管理する）
 class Memory(db.Model):
     __tablename__ = 'memories'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    location = db.Column(db.String(200))
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
     detail = db.Column(db.String(500))
@@ -57,12 +65,14 @@ class Memory(db.Model):
         return {
             'id': self.id,
             'name': self.name,
-            'location': self.location,
             'latitude': self.latitude,
             'longitude': self.longitude,
             'detail': self.detail,
             'account_id': self.account_id,
-            'imageUrl': [img.imageUrl for img in self.images]
+            'imageUrl': [img.imageUrl for img in self.images],
+            'pinColor': self.author.pinColor if self.author else 'red',
+            'textSize': float(self.author.textSize) if self.author else 15,
+            'fontFamily': self.author.fontFamily if self.author else 'sans-serif'
         }
 
 # MemoryImageモデル（思い出に紐づく画像パスを管理する）
@@ -106,7 +116,6 @@ def upload_memories():
             # 既存データが存在する場合は上書き更新する
             if existing_memory:
                 existing_memory.name = item.get('name', existing_memory.name)
-                existing_memory.location = item.get('location', existing_memory.location)
                 existing_memory.latitude = item.get('latitude', existing_memory.latitude)
                 existing_memory.longitude = item.get('longitude', existing_memory.longitude)
                 existing_memory.detail = item.get('detail', existing_memory.detail)
@@ -125,7 +134,6 @@ def upload_memories():
                 new_memory = Memory(
                     id=memory_id,
                     name=name,
-                    location=item.get('location'),
                     latitude=lat,
                     longitude=lon,
                     detail=item.get('detail'),
@@ -214,6 +222,76 @@ def update_path():
         db.session.rollback()
         print(f"Error updating image path: {e}")
         return jsonify({'error': f'更新エラー: {str(e)}'}), 500
+
+# GET /api/accounts : 保存されている全員のアカウントデータを取得する
+@app.route(f'{BASE_PATH}/api/accounts', methods=['GET'])
+def get_accounts():
+    accounts = Account.query.all()
+    return jsonify([a.to_dict() for a in accounts]), 200
+
+# POST /api/accounts : アカウントを作成・更新する
+@app.route(f'{BASE_PATH}/api/accounts', methods=['POST'])
+def upload_accounts():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'error': 'データが空である'}), 400
+
+    # 単一のオブジェクトが送られてきた場合はリストに変換する
+    if isinstance(data, dict):
+        data = [data]
+
+    if not isinstance(data, list):
+        return jsonify({'error': 'データはJSONの配列（リスト）形式である必要がある'}), 400
+
+    try:
+        for item in data:
+            account_id = item.get('id')
+            username = item.get('username')
+
+            if not username:
+                continue
+
+            existing_account = None
+            if account_id:
+                existing_account = db.session.get(Account, account_id)
+            
+            # idで見つからない場合、usernameで検索する
+            if not existing_account:
+                existing_account = Account.query.filter_by(username=username).first()
+
+            # 既存データが存在する場合は上書き更新する
+            if existing_account:
+                existing_account.username = username
+                if 'password_hash' in item:
+                    existing_account.password_hash = item.get('password_hash')
+                if 'pinColor' in item:
+                    existing_account.pinColor = item.get('pinColor')
+                if 'textSize' in item:
+                    existing_account.textSize = item.get('textSize')
+                if 'fontFamily' in item:
+                    existing_account.fontFamily = item.get('fontFamily')
+                    
+            # 既存データが存在しない場合は新規作成する
+            else:
+                new_account = Account(
+                    id=account_id if account_id else None,
+                    username=username,
+                    password_hash=item.get('password_hash'),
+                    pinColor=item.get('pinColor', 'red'),
+                    textSize=item.get('textSize', 15),
+                    fontFamily=item.get('fontFamily', 'sans-serif')
+                )
+                db.session.add(new_account)
+
+        # データベースへの変更を確定する
+        db.session.commit()
+        return jsonify({'message': 'アカウントの保存に成功した'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving accounts: {e}")
+        return jsonify({'error': f'保存エラー: 入力データを確認すること。詳細: {str(e)}'}), 500
 
 
 # --- アプリの起動 ---
