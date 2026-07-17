@@ -2,18 +2,20 @@ import { useState, useMemo, useRef, useLayoutEffect } from 'react';
 import { MantineProvider, AppShell, Group, Title, ColorSchemeScript, Button, Box, ActionIcon, Tooltip, TextInput, Paper, UnstyledButton, Text, createTheme } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { IconUpload, IconSearch } from '@tabler/icons-react';
+import { IconUpload, IconSearch, IconUser } from '@tabler/icons-react';
 import { useSearchBar, useUploadPage } from './lv2';
 import Map from './pages/Map';
 import UploadPage from './pages/StuUpload';
+import Login from './components/login';
 import Opening from './components/Opening';
+import AccountHoverCard from './components/AccountHoverCard';
+import { Notifications, notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
 import './css/GlassStyle.css';
 import './css/App.css';
 
 export const getApiBaseUrl = () => {
-  // HTTPS環境からHTTP（5001ポート）への直接アクセスはブラウザのセキュリティ（Mixed Content）でブロックされます。
-  // そのため、常にViteのプロキシ経由（相対パス）で通信するように空文字を返します。
   return '';
 };
 
@@ -39,7 +41,7 @@ const theme = createTheme({
   }
 });
 
-function AppContent() {
+function AppContent({ userSettings, setUserSettings }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,6 +54,24 @@ function AppContent() {
   const [titleBarRight, setTitleBarRight] = useState(0);
   const [sharedMemories, setSharedMemories] = useState([]);
   const [searchTargetId, setSearchTargetId] = useState(null);
+
+  const handleLoginSuccess = (user) => {
+    const newSettings = {
+      id: user.id,
+      username: user.username,
+      pinColor: user.pinColor,
+      textSize: user.textSize,
+      fontFamily: user.fontFamily
+    };
+    setUserSettings(newSettings);
+    localStorage.setItem('sakaki_user_settings', JSON.stringify(newSettings));
+    notifications.show({
+      title: 'ログイン完了',
+      message: `${user.username} さん、おかえりなさい！`,
+      color: 'blue',
+      className: 'glass-notification'
+    });
+  };
 
   useLayoutEffect(() => {
     const updateTitlePosition = () => {
@@ -70,8 +90,8 @@ function AppContent() {
     return () => window.removeEventListener('resize', updateTitlePosition);
   }, []);
 
-  // URLが /upload の場合にモーダルを開く
-  const isUploadModalOpen = location.pathname === '/upload';
+  const isMyPageOpen = location.pathname.startsWith('/account');
+  const isLoginModalOpen = location.pathname === '/login';
 
   const handleSearchFocus = () => {
     setIsSearchFocused(true);
@@ -107,14 +127,13 @@ function AppContent() {
               </ActionIcon>
             </Tooltip>
           )}
-          {/* データ送信ボタン */}
-          {useUploadPage && (
-            <Tooltip label="データ送信" withArrow position="bottom" classNames={{ tooltip: 'glass-tooltip' }}>
-              <ActionIcon onClick={() => navigate('/upload')} className="glass-panel" variant="transparent" style={{ width: '60px', height: '60px', filter: isSearchFocused ? 'blur(3px)' : 'none', transition: 'filter 0.3s ease', pointerEvents: isSearchFocused ? 'none' : 'auto' }}>
-                <IconUpload size={24} />
-              </ActionIcon>
-            </Tooltip>
-          )}
+          {/* ログイン／アカウント情報ボタン */}
+          <AccountHoverCard 
+            userSettings={userSettings} 
+            setUserSettings={setUserSettings} 
+            isSearchFocused={isSearchFocused} 
+            onOpenMyPage={() => navigate('/account')}
+          />
         </Group>
       </AppShell.Header>
 
@@ -179,7 +198,6 @@ function AppContent() {
                   gap: '4px'
                 }}
               >
-                {/* ※ここは仮のUIです。後で本物のマップデータと繋ぎます */}
                 {searchResults.length > 0 ? (
                 searchResults.map((memory) => (
                   <UnstyledButton
@@ -237,25 +255,80 @@ function AppContent() {
       {/* メインエリア：ここに地図が表示される */}
       <AppShell.Main p={0}>
         <Routes>
-          <Route path="/" element={<Map searchTerm={searchTerm} setSearchTerm={setSearchTerm} isMobile={isMobile} setSharedMemories={setSharedMemories} searchTargetId={searchTargetId} setSearchTargetId={setSearchTargetId} />} />
-          <Route path="/upload" element={<Map searchTerm={searchTerm} setSearchTerm={setSearchTerm} isMobile={isMobile} setSharedMemories={setSharedMemories} searchTargetId={searchTargetId} setSearchTargetId={setSearchTargetId} />} />
+          <Route path="/" element={<Map userSettings={userSettings} searchTerm={searchTerm} setSearchTerm={setSearchTerm} isMobile={isMobile} setSharedMemories={setSharedMemories} searchTargetId={searchTargetId} setSearchTargetId={setSearchTargetId} />} />
+          <Route path="/upload" element={<Map userSettings={userSettings} searchTerm={searchTerm} setSearchTerm={setSearchTerm} isMobile={isMobile} setSharedMemories={setSharedMemories} searchTargetId={searchTargetId} setSearchTargetId={setSearchTargetId} />} />
+          <Route path="/login" element={<Map userSettings={userSettings} searchTerm={searchTerm} setSearchTerm={setSearchTerm} isMobile={isMobile} setSharedMemories={setSharedMemories} searchTargetId={searchTargetId} setSearchTargetId={setSearchTargetId} />} />
+          <Route path="/account" element={<Map userSettings={userSettings} searchTerm={searchTerm} setSearchTerm={setSearchTerm} isMobile={isMobile} setSharedMemories={setSharedMemories} searchTargetId={searchTargetId} setSearchTargetId={setSearchTargetId} />} />
+          <Route path="/account/register" element={<Map userSettings={userSettings} searchTerm={searchTerm} setSearchTerm={setSearchTerm} isMobile={isMobile} setSharedMemories={setSharedMemories} searchTargetId={searchTargetId} setSearchTargetId={setSearchTargetId} />} />
+          <Route path="/account/appearance" element={<Map userSettings={userSettings} searchTerm={searchTerm} setSearchTerm={setSearchTerm} isMobile={isMobile} setSharedMemories={setSharedMemories} searchTargetId={searchTargetId} setSearchTargetId={setSearchTargetId} />} />
         </Routes>
       </AppShell.Main>
       
       <UploadPage 
-        opened={isUploadModalOpen} 
+        opened={isMyPageOpen} 
         onClose={() => navigate('/')} 
+        userSettings={userSettings}
+        setUserSettings={setUserSettings}
+        sharedMemories={sharedMemories}
+      />
+      <Login 
+        opened={isLoginModalOpen} 
+        onClose={() => navigate('/')} 
+        onLoginSuccess={handleLoginSuccess}
       />
     </AppShell>    
   );
 }
 
 export default function App() {
+  const [userSettings, setUserSettings] = useState(() => {
+    const saved = localStorage.getItem('sakaki_user_settings');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return {
+      id: null,
+      username: null,
+      pinColor: 'red',
+      textSize: 15,
+      fontFamily: 'sans-serif'
+    };
+  });
+
+  const baseSize = userSettings?.textSize || 15;
+  const customTheme = createTheme({
+    ...theme,
+    fontFamily: userSettings?.fontFamily || 'sans-serif',
+    fontSizes: {
+      xs: `${baseSize * 0.75}px`,
+      sm: `${baseSize * 0.875}px`,
+      md: `${baseSize}px`,
+      lg: `${baseSize * 1.125}px`,
+      xl: `${baseSize * 1.25}px`,
+    },
+    headings: {
+      fontFamily: userSettings?.fontFamily || 'sans-serif',
+      sizes: {
+        h1: { fontSize: `${baseSize * 2.5}px` },
+        h2: { fontSize: `${baseSize * 2}px` },
+        h3: { fontSize: `${baseSize * 1.75}px` },
+        h4: { fontSize: `${baseSize * 1.5}px` },
+        h5: { fontSize: `${baseSize * 1.25}px` },
+        h6: { fontSize: `${baseSize}px` },
+      }
+    }
+  });
+
   return (
-    <MantineProvider theme={theme} defaultColorScheme="dark">
+    <MantineProvider theme={customTheme} defaultColorScheme="dark">
+      <Notifications position="top-right" zIndex={12000} autoClose={3000} />
       <BrowserRouter basename="/sakaki-map">
         <Opening />
-        <AppContent />
+        <AppContent userSettings={userSettings} setUserSettings={setUserSettings} />
       </BrowserRouter>
     </MantineProvider>
   );

@@ -111,7 +111,8 @@ function ResizeMap({ sidebarHeight, isResizing }) {
 }
 
 // === メインコンポーネント ===
-function Map({ isMobile, setSharedMemories, searchTargetId, setSearchTargetId }) {
+function Map({ userSettings, isMobile, setSharedMemories, searchTargetId, setSearchTargetId }) {
+
   const [memories, setMemories] = useState(Array.isArray(MapData) ? MapData : []);
   const validMemories = useMemo(() => {
     // 1. まず座標があるデータだけに絞り込む。
@@ -375,7 +376,7 @@ function Map({ isMobile, setSharedMemories, searchTargetId, setSearchTargetId })
           {validMemories.map(f => (
             <Marker 
               key={f.id} position={[f.latitude, f.longitude]} 
-              icon={createCustomPinIcon(f.pinColor || 'red')}
+              icon={createCustomPinIcon(userSettings.pinColor)}
               ref={el => (markerRefs.current[f.id] = el)}
               eventHandlers={{ 
                 mouseover: (e) => e.target.openPopup(),
@@ -415,6 +416,7 @@ function Map({ isMobile, setSharedMemories, searchTargetId, setSearchTargetId })
         setSelectedMemoryId={setSelectedMemoryId}
         setFitPoints={setFitPoints}
         isLocationActive={isLocationActive}
+        userSettings={userSettings}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import os
 import json
+import hashlib
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -69,10 +70,7 @@ class Memory(db.Model):
             'longitude': self.longitude,
             'detail': self.detail,
             'account_id': self.account_id,
-            'imageUrl': [img.imageUrl for img in self.images],
-            'pinColor': self.author.pinColor if self.author else 'red',
-            'textSize': float(self.author.textSize) if self.author else 15,
-            'fontFamily': self.author.fontFamily if self.author else 'sans-serif'
+            'imageUrl': [img.imageUrl for img in self.images]
         }
 
 # MemoryImageモデル（思い出に紐づく画像パスを管理する）
@@ -222,6 +220,29 @@ def update_path():
         db.session.rollback()
         print(f"Error updating image path: {e}")
         return jsonify({'error': f'更新エラー: {str(e)}'}), 500
+
+# POST /api/login : ログイン処理
+@app.route(f'{BASE_PATH}/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({'error': 'ユーザー名とパスワードを入力してください'}), 400
+
+    username = data.get('username')
+    password = data.get('password')
+
+    account = Account.query.filter_by(username=username).first()
+    if not account:
+        return jsonify({'error': 'ユーザー名が間違っています'}), 401
+
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    if account.password_hash != hashed_password:
+        return jsonify({'error': 'パスワードが間違っています'}), 401
+
+    return jsonify({
+        'message': 'ログイン成功',
+        'user': account.to_dict()
+    }), 200
 
 # GET /api/accounts : 保存されている全員のアカウントデータを取得する
 @app.route(f'{BASE_PATH}/api/accounts', methods=['GET'])

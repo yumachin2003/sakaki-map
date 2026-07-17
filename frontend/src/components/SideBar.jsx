@@ -11,7 +11,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-export default function SideBar({sidebarRef, isResizing, sidebarHeight, isMobile, sidebarWidth, startResizing, snapPoints, titleOnlyRef, selectedMemory, cardRef, handleReset, userLocation, selectedMemoryId, filteredMemories, setSelectedMemoryId, setFitPoints, isLocationActive}) {
+export default function SideBar({sidebarRef, isResizing, sidebarHeight, isMobile, sidebarWidth, startResizing, snapPoints, titleOnlyRef, selectedMemory, cardRef, handleReset, userLocation, selectedMemoryId, filteredMemories, setSelectedMemoryId, setFitPoints, isLocationActive, userSettings}) {
   return (
     <>
       {/* 1. 一覧表示用のサイドバー */}
@@ -56,7 +56,7 @@ export default function SideBar({sidebarRef, isResizing, sidebarHeight, isMobile
                   >
                     <Group justify="space-between" wrap="nowrap">
                       <Box>
-                        <Text style={{ fontSize: `${f.textSize || 15}px`, fontFamily: f.fontFamily || 'sans-serif', color: 'white' }} fw={500}>{f.name}</Text>
+                        <Text style={{ fontSize: `${userSettings?.textSize || 15}px`, fontFamily: userSettings?.fontFamily || 'sans-serif', color: 'white' }} fw={500}>{f.name}</Text>
                       </Box>
                     </Group>
                   </List.Item>
@@ -102,7 +102,7 @@ export default function SideBar({sidebarRef, isResizing, sidebarHeight, isMobile
           <ScrollArea style={{ flex: 1, touchAction: 'pan-y' }}>
             <Stack gap="md" px="md" pb={40} pt="xs">
               <Box pr={30}>
-                <Text style={{ fontSize: `${selectedMemory?.textSize || 15}px`, fontFamily: selectedMemory?.fontFamily || 'sans-serif', color: 'white' }} fw={700}>
+                <Text style={{ fontSize: `${userSettings?.textSize || 15}px`, fontFamily: userSettings?.fontFamily || 'sans-serif', color: 'white' }} fw={700}>
                   {selectedMemory?.name || ''}
                 </Text>
                 {userLocation && selectedMemory && (

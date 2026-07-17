@@ -1,7 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&display=swap');
+
 /* カスタムフォントの読み込み */
 @font-face {
   font-family: 'Keifont';
   src: url('../assets/keifont.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Kaisho';
+  src: url('../assets/HOT-GFKaishokk-E.otf') format('opentype');
 }
 @font-face {
   font-family: 'Mincho';
@@ -32,7 +38,6 @@
 /* グローバルスタイル */
 body {
   margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 h1, h2 {
