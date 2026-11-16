@@ -488,8 +488,16 @@ export default function MyPage({ opened, onClose, userSettings, setUserSettings,
         <Tabs.Panel value="account" p="xl">
           <Stack gap="md">
             <Box p="md" style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+              <Text c="dimmed" size="sm">表示名</Text>
+              <Text c="white" size="lg" fw={700}>{userSettings?.disp_name || '未設定'}</Text>
+            </Box>
+            <Box p="md" style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
               <Text c="dimmed" size="sm">ユーザー名</Text>
               <Text c="white" size="lg" fw={700}>{userSettings?.username}</Text>
+            </Box>
+            <Box p="md" style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+              <Text c="dimmed" size="sm">メールアドレス</Text>
+              <Text c="white" size="lg" fw={700}>{userSettings?.email || '未登録'}</Text>
             </Box>
             <Box p="md" style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
               <Text c="dimmed" size="sm">ID</Text>
@@ -818,7 +826,7 @@ export default function MyPage({ opened, onClose, userSettings, setUserSettings,
             <div style={{ fontSize: '7cqw', textAlign: 'center', letterSpacing: '0.2em', fontWeight: 'bold' }}>修了証</div>
             
             <div>
-              <div style={{ fontSize: '5cqw', marginBottom: '4cqw' }}>{userSettings?.username || 'ゲスト'} 様</div>
+              <div style={{ fontSize: '5cqw', marginBottom: '4cqw' }}>{userSettings?.disp_name || userSettings?.username || 'ゲスト'} 様</div>
               <div style={{ fontSize: '3cqw', lineHeight: 1.8, textIndent: '1em' }}>
                 あなたは、坂城町講座の「プログラマー体験！さかき思い出マップを作ろう」において、よく考え、失敗しながらもあきらめずに講座を修了しました。
               </div>

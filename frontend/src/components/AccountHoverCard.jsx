@@ -15,6 +15,8 @@ export default function AccountHoverCard({ userSettings, setUserSettings, isSear
   const handleLogout = () => {
     // ログアウト時に初期設定に戻す
     setUserSettings({
+      id: null,
+      disp_name: null,
       username: null,
       pinColor: 'red',
       textSize: 15,
@@ -94,7 +96,7 @@ export default function AccountHoverCard({ userSettings, setUserSettings, isSear
             <Stack gap="sm">
               <Text size="xs" fw={500} style={{ color: 'white' }}>ログイン中</Text>
               <Text size="sm" fw={700} style={{ color: 'white' }}>
-                {userSettings.username}
+                {userSettings.disp_name || userSettings.username}
               </Text>
               <Button 
                 variant="light" 

@@ -28,3 +28,4 @@ venv
 
 *.db
 frontend/src/lv4/upload/*.json
+__pycache__
